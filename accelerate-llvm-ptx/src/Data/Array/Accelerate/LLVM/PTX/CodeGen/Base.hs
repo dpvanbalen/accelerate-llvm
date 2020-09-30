@@ -87,7 +87,7 @@ import qualified LLVM.AST.Name                                      as LLVM
 import qualified LLVM.AST.Type                                      as LLVM
 
 import Control.Applicative
-import Control.Monad                                                ( void )
+import Control.Monad                                                ( void, (>=>) )
 import Control.Monad.State                                          ( gets )
 import Prelude                                                      as P
 import qualified Foreign.CUDA.Driver.Utils
@@ -339,26 +339,29 @@ shfl_up :: TypeR a
         -> Operands a
         -> Operands Word32
         -> CodeGen PTX (Operands a)
-shfl_up = undefined
+shfl_up = shfl "up"
 
 shfl_down :: forall a. TypeR a
           -> Operands a
           -> Operands Word32
           -> CodeGen PTX (Operands a)
-shfl_down typer a delta = case typer of
+shfl_down  = shfl "down"
+
+shfl :: forall a. Label -> TypeR a -> Operands a -> Operands Word32 -> CodeGen PTX (Operands a)
+shfl mode typer a delta = case typer of
   TupRunit -> return OP_Unit
   TupRpair _ _ -> error "Acc.LLVM.PTX.CG.Base - I thought AoS->SoA conversion would prevent this"
   TupRsingle sctyp -> case sctyp of
     SingleScalarType (NumSingleType x) -> case x of
-      IntegralNumType TypeInt8   -> cast_shfl_cast_i
-      IntegralNumType TypeInt16  -> cast_shfl_cast_i
-      IntegralNumType TypeInt32  -> shfl_down_i32 a delta   -- no cast needed
-      IntegralNumType TypeWord8  -> cast_shfl_cast_i
-      IntegralNumType TypeWord16 -> cast_shfl_cast_i
-      IntegralNumType TypeWord32 -> cast_shfl_cast_i
+      IntegralNumType TypeInt8   -> cast_shfl_cast_i a
+      IntegralNumType TypeInt16  -> cast_shfl_cast_i a
+      IntegralNumType TypeInt32  -> shfl_i32 a           -- no cast needed
+      IntegralNumType TypeWord8  -> cast_shfl_cast_i a
+      IntegralNumType TypeWord16 -> cast_shfl_cast_i a
+      IntegralNumType TypeWord32 -> cast_shfl_cast_i a
 
-      FloatingNumType TypeHalf  -> cast_shfl_cast_f
-      FloatingNumType TypeFloat -> shfl_down_float a delta -- no cast needed
+      FloatingNumType TypeHalf  -> cast_shfl_cast_f a
+      FloatingNumType TypeFloat -> shfl_f32 a            -- no cast needed
 
       -- TODO: split 64-bit primitives into two 32-bit integers somehow
       IntegralNumType TypeInt    -> undefined
@@ -368,59 +371,44 @@ shfl_down typer a delta = case typer of
       FloatingNumType TypeDouble -> undefined
     VectorScalarType _ -> error "is this a thing? VectorScalarType"
   where
-    cast_shfl_cast_i :: (IsIntegral a, IsNum a) => CodeGen PTX (Operands a)
-    cast_shfl_cast_i = A.fromIntegral integralType numType a >>= \a' -> shfl_down_i32 a' delta >>= A.fromIntegral integralType numType
+    shfl_i32 :: Operands Int32 -> CodeGen PTX (Operands Int32)
+    shfl_i32 x = mk_shfl mode "i32" primType x delta
 
-    cast_shfl_cast_f :: (IsFloating a, IsNum a) => CodeGen PTX (Operands a)
-    cast_shfl_cast_f = A.toFloating numType floatingType a >>= \a' -> shfl_down_float a' delta >>= A.toFloating numType floatingType
+    shfl_f32 :: Operands Float -> CodeGen PTX (Operands Float)
+    shfl_f32 x = mk_shfl mode "f32" primType x delta
 
+    cast_shfl_cast_i :: (IsIntegral a, IsNum a) => Operands a -> CodeGen PTX (Operands a)
+    cast_shfl_cast_i = A.fromIntegral integralType numType >=> shfl_i32 >=> A.fromIntegral integralType numType
 
-shfl_up_i32 :: Operands Int32                -- give up
-            -> Operands Word32               -- offset
-            -> CodeGen PTX (Operands Int32) -- received from down
-shfl_up_i32   = mk_shfl "up" "i32" (ScalarPrimType scalarType)
+    cast_shfl_cast_f :: (IsFloating a, IsNum a) => Operands a -> CodeGen PTX (Operands a)
+    cast_shfl_cast_f = A.toFloating numType floatingType >=> shfl_f32 >=> A.toFloating numType floatingType
 
-shfl_up_float :: Operands Float                -- give up
-              -> Operands Word32               -- offset
-              -> CodeGen PTX (Operands Float) -- received from down
-shfl_up_float = mk_shfl "up" "f32" (ScalarPrimType scalarType)
-
-shfl_down_i32 :: Operands Int32                -- give up
-              -> Operands Word32               -- offset
-              -> CodeGen PTX (Operands Int32) -- received from down
-shfl_down_i32   = mk_shfl "down" "i32" (ScalarPrimType scalarType)
-
-shfl_down_float :: Operands Float                -- give up
-                -> Operands Word32               -- offset
-                -> CodeGen PTX (Operands Float) -- received from down
-shfl_down_float = mk_shfl "down" "f32" (ScalarPrimType scalarType)
-
-
--- Only works for 32-bit int or floats!
+-- Only works for 32-bit int or floats!!
 mk_shfl :: (IsPrim a)
-        => Label -- direction ("up","down","bfly","idx") (the latter two probably represent the "xor" and "get from an index" variants)
+        => Label -- direction: ["up","down","bfly","idx"] (the latter two probably represent the "xor" and "get from an index" variants)
         -> Label -- the type, "i32" or "f32"
         -> PrimType a
         -> Operands a                  -- value to give
         -> Operands Word32             -- delta
         -> CodeGen PTX (Operands a)   -- value received
 mk_shfl mode typ pt val delta = do
-  let sync = Foreign.CUDA.Driver.Utils.libraryVersion >= 9000
   warpsize <- warpSize
   -- starting CUDA 9.0, the normal `shfl` primitives are removed in favour of the newer `shfl_sync` ones:
   -- they behave the same, except they start with a 'mask' argument specifying which threads participate in the shuffle.
   -- Arguably, it'd be better to branch on the minimum requirements for `shfl_sync`, or maybe even to branch
   -- (in real Haskell code) on the compute version of the gpu, but I couldn't find exact version numbers for these.
+  let sync = Foreign.CUDA.Driver.Utils.libraryVersion >= 9000
+
   (if sync
-    then call . (Lam primType (op primType $ liftWord32 0xffffffff)) -- mask, specifying all threads should participate in this shfl
+    then call . Lam primType (op primType $ liftWord32 0xffffffff) -- mask, 32 ones means all threads should participate in this shfl
     else call)
       (Lam pt (op primType val) $          -- value to provide to other lanes
         Lam primType (op primType delta) $ -- offset in shfl_up/shfl_down, source in shfl, mask for XOR in shfl_xor
-          Lam primType (op primType warpsize) $ --width - setting this to anything other than warpsize makes the shfl behave as though the warp is smaller
+          Lam primType (op primType warpsize) $ --width - optional parameter whose default is warpsize
             Body (PrimType pt)
-                  Nothing --(Just Tail) -- no idea
+                  (Just Tail)
                   ("llvm.nvvm.shfl." -- Name of the function, e.g. "llvm.nvvm.shfl.sync.up.i32"
-                    <> (if (sync) then "sync." else "")
+                    <> (if sync then "sync." else "")
                     <> mode <> "." <> typ))
     [Convergent, InaccessibleMemOnly, NoUnwind]
 

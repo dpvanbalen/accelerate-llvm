@@ -132,7 +132,7 @@ mkFoldAllS dev aenv tp combine mseed marr =
       smem n              = warps * bytes
         where
           ws        = CUDA.warpSize dev
-          warps     = n `P.quot` ws -- why is this rounded down? don't we need a warp for the leftovers? TODO
+          warps     = n `P.quot` ws
           bytes     = bytesElt tp
   in
   makeOpenAccWith config "foldAllS" (paramOut ++ paramIn ++ paramEnv) $ do
@@ -471,7 +471,7 @@ reduceBlockShfl dev tp combine size = warpReduce >=> warpAggregate
 
     -- -- Temporary storage required for each warp
     bytes           = bytesElt tp
-    warp_smem_elems = CUDA.warpSize dev + (CUDA.warpSize dev `P.quot` 2)
+    -- warp_smem_elems = CUDA.warpSize dev + (CUDA.warpSize dev `P.quot` 2)
 
     -- Step 1: Reduction in every warp
     --
@@ -500,8 +500,8 @@ reduceBlockShfl dev tp combine size = warpReduce >=> warpAggregate
       -- Allocate #warps elements of shared memory
       bd    <- blockDim
       warps <- A.quot integralType bd (int32 (CUDA.warpSize dev))
-      skip  <- A.mul numType warps (int32 (warp_smem_elems * bytes))
-      smem  <- dynamicSharedMem tp TypeInt32 warps skip
+      -- skip  <- A.mul numType warps (int32 (warp_smem_elems * bytes))
+      smem  <- dynamicSharedMem tp TypeInt32 warps (liftInt32 0)
 
       -- Share the per-lane aggregates
       wid   <- warpId
