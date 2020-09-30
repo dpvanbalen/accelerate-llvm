@@ -416,7 +416,7 @@ mk_shfl mode typ pt val delta =
       (Lam pt (op primType val) $
         Lam (ScalarPrimType scalarTypeWord32) (op primType delta) $
           Body (PrimType pt)
-               (Just Tail) -- no idea
+               Nothing --(Just Tail) -- no idea
                ("llvm.nvvm.shfl." <>
                   (if (sync) then "sync." else "") <>
                   mode <> "." <> typ))
