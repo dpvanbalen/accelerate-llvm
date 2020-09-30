@@ -404,22 +404,24 @@ mk_shfl :: (IsPrim a)
         -> Operands a                  -- value to give
         -> Operands Word32             -- delta
         -> CodeGen PTX (Operands a)   -- value received
-mk_shfl mode typ pt val delta =
-  let sync = Foreign.CUDA.Driver.Utils.libraryVersion >= 9000 in
+mk_shfl mode typ pt val delta = do
+  let sync = Foreign.CUDA.Driver.Utils.libraryVersion >= 9000
+  warpsize <- warpSize
   -- starting CUDA 9.0, the normal `shfl` primitives are removed in favour of the newer `shfl_sync` ones:
   -- they behave the same, except they start with a 'mask' argument specifying which threads participate in the shuffle.
   -- Arguably, it'd be better to branch on the minimum requirements for `shfl_sync`, or maybe even to branch
   -- (in real Haskell code) on the compute version of the gpu, but I couldn't find exact version numbers for these.
   (if sync
-    then call . (Lam (ScalarPrimType scalarTypeWord32) (op primType $ liftWord32 0xffffffff))
+    then call . (Lam primType (op primType $ liftWord32 0xffffffff)) -- mask, specifying all threads should participate in this shfl
     else call)
-      (Lam pt (op primType val) $
-        Lam (ScalarPrimType scalarTypeWord32) (op primType delta) $
-          Body (PrimType pt)
-               Nothing --(Just Tail) -- no idea
-               ("llvm.nvvm.shfl." <>
-                  (if (sync) then "sync." else "") <>
-                  mode <> "." <> typ))
+      (Lam pt (op primType val) $          -- value to provide to other lanes
+        Lam primType (op primType delta) $ -- offset in shfl_up/shfl_down, source in shfl, mask for XOR in shfl_xor
+          Lam primType (op primType warpsize) $ --width - setting this to anything other than warpsize makes the shfl behave as though the warp is smaller
+            Body (PrimType pt)
+                  Nothing --(Just Tail) -- no idea
+                  ("llvm.nvvm.shfl." -- Name of the function, e.g. "llvm.nvvm.shfl.sync.up.i32"
+                    <> (if (sync) then "sync." else "")
+                    <> mode <> "." <> typ))
     [Convergent, InaccessibleMemOnly, NoUnwind]
 
 -- Shared memory
