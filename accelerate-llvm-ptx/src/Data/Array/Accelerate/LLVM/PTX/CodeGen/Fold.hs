@@ -483,7 +483,6 @@ reduceBlockShfl dev tp combine size = warpReduce >=> warpAggregate
         -- The entire thread block is valid, so skip bounds checks.
         Nothing ->
           reduceWarpShfl dev tp combine Nothing input
-
         -- Otherwise check how many elements are valid for this warp. If it is
         -- full then we can still skip bounds checks for it.
         Just n -> do
@@ -557,24 +556,24 @@ reduceWarpShfl dev typer combine size = reduce 0
 
     valid offset = do
       lane <- laneId
+      warpsize <- warpSize
       -- typeconversion to do bounds check
-      offset' <- A.fromIntegral TypeWord32 numType offset
+      offset' <- A.fromIntegral integralType numType offset
       i <- A.add numType lane offset'
       case size of
-        Nothing -> return (liftBool True)
+        Nothing -> A.lt singleType i warpsize
         Just n  -> A.lt singleType i n
 
     -- Unfold the reduction as a recursive code generation function.
     reduce :: Int -> Operands e -> CodeGen PTX (Operands e)
     reduce step x
-      | step >= steps = return x
+      | step > steps = return x
       | otherwise     = do
           let offset = liftWord32 (1 `P.shiftL` step)
           y  <- shfl_down typer x offset
           x' <- if (typer, valid offset)
                   then app2 combine x y
                   else return x
-
           reduce (step + 1) x'
 
 

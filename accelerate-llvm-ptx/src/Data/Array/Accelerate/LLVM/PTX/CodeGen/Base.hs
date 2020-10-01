@@ -372,10 +372,10 @@ shfl mode typer a delta = case typer of
     VectorScalarType _ -> error "is this a thing? VectorScalarType"
   where
     shfl_i32 :: Operands Int32 -> CodeGen PTX (Operands Int32)
-    shfl_i32 x = mk_shfl mode "i32" primType x delta
+    shfl_i32 x = mk_shfl mode "i32" x delta
 
     shfl_f32 :: Operands Float -> CodeGen PTX (Operands Float)
-    shfl_f32 x = mk_shfl mode "f32" primType x delta
+    shfl_f32 x = mk_shfl mode "f32" x delta
 
     cast_shfl_cast_i :: (IsIntegral a, IsNum a) => Operands a -> CodeGen PTX (Operands a)
     cast_shfl_cast_i = A.fromIntegral integralType numType >=> shfl_i32 >=> A.fromIntegral integralType numType
@@ -387,28 +387,28 @@ shfl mode typer a delta = case typer of
 mk_shfl :: (IsPrim a)
         => Label -- direction: ["up","down","bfly","idx"] (the latter two probably represent the "xor" and "get from an index" variants)
         -> Label -- the type, "i32" or "f32"
-        -> PrimType a
         -> Operands a                  -- value to give
         -> Operands Word32             -- delta
         -> CodeGen PTX (Operands a)   -- value received
-mk_shfl mode typ pt val delta = do
+mk_shfl mode typ val delta = do
   warpsize <- warpSize
+
   -- starting CUDA 9.0, the normal `shfl` primitives are removed in favour of the newer `shfl_sync` ones:
   -- they behave the same, except they start with a 'mask' argument specifying which threads participate in the shuffle.
   -- Arguably, it'd be better to branch on the minimum requirements for `shfl_sync`, or maybe even to branch
-  -- (in real Haskell code) on the compute version of the gpu, but I couldn't find exact version numbers for these.
+  -- on the compute version of the gpu, but I couldn't find exact version numbers for these.
   let sync = Foreign.CUDA.Driver.Utils.libraryVersion >= 9000
 
   (if sync
-    then call . Lam primType (op primType $ liftWord32 0xffffffff) -- mask, 32 ones means all threads should participate in this shfl
+    then call . Lam primType (op primType $ liftWord32 0xffffffff) -- mask, 32 1s means all threads should participate in this shfl
     else call)
-      (Lam pt (op primType val) $          -- value to provide to other lanes
-        Lam primType (op primType delta) $ -- offset in shfl_up/shfl_down, source in shfl, mask for XOR in shfl_xor
-          Lam primType (op primType warpsize) $ --width - optional parameter whose default is warpsize
-            Body (PrimType pt)
+      (Lam primType (op primType val) $                            -- value to provide to other lanes
+        Lam primType (op primType delta) $                         -- offset in shfl_up/shfl_down, source in shfl, mask for XOR in shfl_xor
+          Lam primType (op primType warpsize) $                    -- width - optional parameter whose default is warpsize, as here
+            Body (PrimType primType)                               --     we have to provide it, it's only optional in CUDA I guess
                   (Just Tail)
-                  ("llvm.nvvm.shfl." -- Name of the function, e.g. "llvm.nvvm.shfl.sync.up.i32"
-                    <> (if sync then "sync." else "")
+                  ("llvm.nvvm.shfl."                               -- Name of the function, e.g. "llvm.nvvm.shfl.sync.up.i32"
+                    <> (if sync then "sync." else "")              --                         or "llvm.nvvm.shfl.down.f32"
                     <> mode <> "." <> typ))
     [Convergent, InaccessibleMemOnly, NoUnwind]
 
