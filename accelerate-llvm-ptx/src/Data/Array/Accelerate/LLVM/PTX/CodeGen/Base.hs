@@ -406,7 +406,7 @@ mk_shfl mode typ val delta = do
         Lam primType (op primType delta) $                         -- offset in shfl_up/shfl_down, source in shfl, mask for XOR in shfl_xor
           Lam primType (op primType warpsize) $                    -- width - optional parameter whose default is warpsize, as here
             Body (PrimType primType)                               --     we have to provide it, it's only optional in CUDA I guess
-                  (Just Tail)
+                  Nothing
                   ("llvm.nvvm.shfl."                               -- Name of the function, e.g. "llvm.nvvm.shfl.sync.up.i32"
                     <> (if sync then "sync." else "")              --                         or "llvm.nvvm.shfl.down.f32"
                     <> mode <> "." <> typ))
