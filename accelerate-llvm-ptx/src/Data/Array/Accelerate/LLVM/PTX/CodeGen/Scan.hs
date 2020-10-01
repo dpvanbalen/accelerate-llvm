@@ -1269,44 +1269,45 @@ scanWarpSMem
     -> IRArray (Vector e)                           -- ^ temporary storage array in shared memory (1.5 x warp size elements)
     -> Operands e                                   -- ^ calling thread's input element
     -> CodeGen PTX (Operands e)
-scanWarpSMem dir dev tp combine smem = scan 0
-  where
-    log2 :: Double -> Double
-    log2 = P.logBase 2
+scanWarpSMem dir dev tp combine smem x = shfl_down tp x (liftWord32 1) --TODO undo this; just to quickly test shfl operation
+  -- scan 0
+  -- where
+  --   log2 :: Double -> Double
+  --   log2 = P.logBase 2
 
-    -- Number of steps required to scan warp
-    steps     = P.floor (log2 (P.fromIntegral (CUDA.warpSize dev)))
-    halfWarp  = P.fromIntegral (CUDA.warpSize dev `P.quot` 2)
+  --   -- Number of steps required to scan warp
+  --   steps     = P.floor (log2 (P.fromIntegral (CUDA.warpSize dev)))
+  --   halfWarp  = P.fromIntegral (CUDA.warpSize dev `P.quot` 2)
 
-    -- Unfold the scan as a recursive code generation function
-    scan :: Int -> Operands e -> CodeGen PTX (Operands e)
-    scan step x
-      | step >= steps = return x
-      | otherwise     = do
-          let offset = liftInt32 (1 `P.shiftL` step)
+  --   -- Unfold the scan as a recursive code generation function
+  --   scan :: Int -> Operands e -> CodeGen PTX (Operands e)
+  --   scan step x
+  --     | step >= steps = return x
+  --     | otherwise     = do
+  --         let offset = liftInt32 (1 `P.shiftL` step)
 
-          -- share partial result through shared memory buffer
-          lane <- laneId
-          i    <- A.add numType lane (liftInt32 halfWarp)
-          writeArray TypeInt32 smem i x
+  --         -- share partial result through shared memory buffer
+  --         lane <- laneId
+  --         i    <- A.add numType lane (liftInt32 halfWarp)
+  --         writeArray TypeInt32 smem i x
 
-          __syncwarp
+  --         __syncwarp
 
-          -- update partial result if in range
-          x'   <- if (tp, A.gte singleType lane offset)
-                    then do
-                      i' <- A.sub numType i offset    -- lane + HALF_WARP - offset
-                      x' <- readArray TypeInt32 smem i'
-                      case dir of
-                        LeftToRight -> app2 combine x' x
-                        RightToLeft -> app2 combine x x'
+  --         -- update partial result if in range
+  --         x'   <- if (tp, A.gte singleType lane offset)
+  --                   then do
+  --                     i' <- A.sub numType i offset    -- lane + HALF_WARP - offset
+  --                     x' <- readArray TypeInt32 smem i'
+  --                     case dir of
+  --                       LeftToRight -> app2 combine x' x
+  --                       RightToLeft -> app2 combine x x'
 
-                    else
-                      return x
+  --                   else
+  --                     return x
 
-          __syncwarp
+  --         __syncwarp
 
-          scan (step+1) x'
+  --         scan (step+1) x'
 
 
 -- Utilities

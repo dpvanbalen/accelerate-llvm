@@ -346,10 +346,10 @@ mkFoldSegP_warp aenv repr@(ArrayR shr tp) intTp combine mseed marr mseg = do
     -- Note that this is aliased with the memory used to communicate the start
     -- and end indices of this segment.
     --
-    smem  <- do
-      a <- A.mul numType wid (int32 per_warp_bytes)
-      b <- dynamicSharedMem tp TypeInt32 (int32 per_warp_elems) a
-      return b
+    -- smem  <- do
+    --   a <- A.mul numType wid (int32 per_warp_bytes)
+    --   b <- dynamicSharedMem tp TypeInt32 (int32 per_warp_elems) a
+    --   return b
 
     -- Compute the number of segments and size of the innermost dimension. These
     -- are required if we are reducing a rank-2 or higher array, to properly
