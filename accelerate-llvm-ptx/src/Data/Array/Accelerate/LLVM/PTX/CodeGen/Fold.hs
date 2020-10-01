@@ -470,7 +470,7 @@ reduceBlockShfl dev tp combine size = warpReduce >=> warpAggregate
     int32 = liftInt32 . P.fromIntegral
 
     -- -- Temporary storage required for each warp
-    bytes           = bytesElt tp
+    -- bytes           = bytesElt tp
     -- warp_smem_elems = CUDA.warpSize dev + (CUDA.warpSize dev `P.quot` 2)
 
     -- Step 1: Reduction in every warp
@@ -512,15 +512,30 @@ reduceBlockShfl dev tp combine size = warpReduce >=> warpAggregate
       -- Wait for each warp to finish its local reduction
       __syncthreads
 
-      -- Now, warp 0 will reduce all the warp-wide results.
-      -- TODO: this means that the block can only consist of 32 warps,
-      -- reducing 1024 elements total. Check if this gets handled by callers!
-      if (tp, A.eq singleType wid (liftInt32 0))
-        then warpReduce input
+      -- -- Now, warp 0 will reduce all the warp-wide results.
+      -- -- TODO: this means that the block can only consist of 32 warps,
+      -- -- reducing 1024 elements total. Check if this gets handled by callers!
+      -- if (tp, A.eq singleType wid (liftInt32 0))
+      --   then warpReduce input
+      --   else
+      --     return input
+
+      -- Update the total aggregate. Thread 0 just does this sequentially (as is
+      -- done in CUB), but we could also do this cooperatively (better for
+      -- larger thread blocks?)
+      tid   <- threadIdx
+      if (tp, A.eq singleType tid (liftInt32 0))
+        then do
+          steps <- case size of
+                     Nothing -> return warps
+                     Just n  -> do
+                       a <- A.add numType n (int32 (CUDA.warpSize dev - 1))
+                       b <- A.quot integralType a (int32 (CUDA.warpSize dev))
+                       return b
+          iterFromStepTo tp (liftInt32 1) (liftInt32 1) steps input $ \step x ->
+            app2 combine x =<< readArray TypeInt32 smem step
         else
           return input
-
-
 
 
 
