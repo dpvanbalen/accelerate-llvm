@@ -1269,7 +1269,7 @@ scanWarpSMem
     -> IRArray (Vector e)                           -- ^ temporary storage array in shared memory (1.5 x warp size elements)
     -> Operands e                                   -- ^ calling thread's input element
     -> CodeGen PTX (Operands e)
-scanWarpSMem dir dev tp combine smem x = shfl_down tp x (liftWord32 1) --TODO undo this; just to quickly test shfl operation
+scanWarpSMem dir dev tp combine smem x = app2 combine x x--shfl_down tp x (liftWord32 2) --TODO undo this; just to quickly test shfl operation
   -- scan 0
   -- where
   --   log2 :: Double -> Double
