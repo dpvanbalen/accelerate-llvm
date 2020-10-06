@@ -82,14 +82,14 @@ mkScan aenv repr dir combine seed arr
   where
     codeScan = case repr of
       ArrayR (ShapeRsnoc ShapeRz) tp -> [ mkScanAllP1 dir aenv tp   combine seed arr
-                                        , mkScanAllP2 dir aenv tp   combine
-                                        , mkScanAllP3 dir aenv tp   combine seed
+                                        -- , mkScanAllP2 dir aenv tp   combine
+                                        -- , mkScanAllP3 dir aenv tp   combine seed
                                         ]
       _                              -> [ mkScanDim   dir aenv repr combine seed arr
                                         ]
-    codeFill = case seed of
-      Just s -> [ mkScanFill aenv repr s ]
-      Nothing -> []
+    codeFill = [] --case seed of
+      -- Just s -> [ mkScanFill aenv repr s ]
+      -- Nothing -> []
 
 -- Variant of 'scanl' where the final result is returned in a separate array.
 --
@@ -459,20 +459,20 @@ mkScan'AllP1 dir aenv tp combine seed marr = do
   --
   let
       (arrOut, paramOut)  = mutableArray (ArrayR dim1 tp) "out"
-      (arrTmp, paramTmp)  = mutableArray (ArrayR dim1 tp) "tmp"
+      -- (arrTmp, paramTmp)  = mutableArray (ArrayR dim1 tp) "tmp"
       (arrIn,  paramIn)   = delayedArray "in" marr
-      end                 = indexHead (irArrayShape arrTmp)
+      end                 = indexHead (irArrayShape arrOut) --arrTmp
       paramEnv            = envParam aenv
       --
       config              = launchConfig dev (CUDA.incWarp dev) smem const [|| const ||]
-      smem n              = warps * (1 + per_warp) * bytes
+      smem n              = 0--warps * (1 + per_warp) * bytes
         where
           ws        = CUDA.warpSize dev
           warps     = n `P.quot` ws
           per_warp  = ws + ws `P.quot` 2
           bytes     = bytesElt tp
   --
-  makeOpenAccWith config "scanP1" (paramTmp ++ paramOut ++ paramIn ++ paramEnv) $ do
+  makeOpenAccWith config "scanP1" (paramOut ++ paramIn ++ paramEnv) $ do--(paramTmp ++ paramOut ++ paramIn ++ paramEnv) $ do
 
     -- Size of the input array
     sz  <- indexHead <$> delayedExtent arrIn
@@ -527,9 +527,10 @@ mkScan'AllP1 dir aenv tp combine seed marr = do
         -- Block-wide scan
         n  <- A.sub numType sz inf
         n' <- i32 n
-        x2 <- if (tp, A.gte singleType n bd)
-                then scanBlockSMem dir dev tp combine Nothing   x1
-                else scanBlockSMem dir dev tp combine (Just n') x1
+        x2 <- shfl_down tp x1 (liftWord32 2)
+          -- if (tp, A.gte singleType n bd)
+          --       then scanBlockSMem dir dev tp combine Nothing   x1
+          --       else scanBlockSMem dir dev tp combine (Just n') x1
 
         -- Write this thread's scan result to memory. Recall that we had to make
         -- space for the initial element, so the very last thread does not store
@@ -540,15 +541,15 @@ mkScan'AllP1 dir aenv tp combine seed marr = do
 
         -- Last active thread writes its result to the partial sums array. These
         -- will be used to compute the carry-in value in step 2.
-        m  <- do x <- A.min singleType n bd
-                 y <- A.sub numType x (liftInt 1)
-                 return y
-        when (A.eq singleType tid m) $
-          case dir of
-            LeftToRight -> writeArray TypeInt arrTmp seg x2
-            RightToLeft -> do x <- A.sub numType end seg
-                              y <- A.sub numType x (liftInt 1)
-                              writeArray TypeInt arrTmp y x2
+        -- m  <- do x <- A.min singleType n bd
+        --          y <- A.sub numType x (liftInt 1)
+        --          return y
+        -- when (A.eq singleType tid m) $
+        --   case dir of
+        --     LeftToRight -> writeArray TypeInt arrTmp seg x2
+        --     RightToLeft -> do x <- A.sub numType end seg
+        --                       y <- A.sub numType x (liftInt 1)
+        --                       writeArray TypeInt arrTmp y x2
 
     return_
 
@@ -1269,7 +1270,7 @@ scanWarpSMem
     -> IRArray (Vector e)                           -- ^ temporary storage array in shared memory (1.5 x warp size elements)
     -> Operands e                                   -- ^ calling thread's input element
     -> CodeGen PTX (Operands e)
-scanWarpSMem dir dev tp combine smem x = shfl_down tp x (liftWord32 2) --TODO undo this; just to quickly test shfl operation
+scanWarpSMem dir dev tp combine smem x = shfl_down tp x (liftWord32 2) --TODO DB undo this; just to quickly test shfl operation
   -- scan 0
   -- where
   --   log2 :: Double -> Double

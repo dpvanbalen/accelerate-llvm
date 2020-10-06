@@ -399,7 +399,7 @@ mk_shfl mode typ val delta = do
   -- on the compute version of the gpu, but I couldn't find exact version numbers for these.
   let sync = Foreign.CUDA.Driver.Utils.libraryVersion >= 9000
 
-  (if not sync
+  (if sync
     then call . Lam primType (op primType $ liftWord32 0xffffffff) -- mask, 32 1s means all threads should participate in this shfl
     else call)
       (Lam primType (op primType val) $                            -- value to provide to other lanes
@@ -408,7 +408,7 @@ mk_shfl mode typ val delta = do
             Body (PrimType primType)                               --     we have to provide it, it's only optional in CUDA I guess
                   (Just NoTail)
                   ("llvm.nvvm.shfl."                               -- Name of the function, e.g. "llvm.nvvm.shfl.sync.up.i32"
-                    <> (if not sync then "sync." else "")              --                         or "llvm.nvvm.shfl.down.f32"
+                    <> (if sync then "sync." else "")              --                         or "llvm.nvvm.shfl.down.f32"
                     <> mode <> "." <> typ))
     [Convergent, InaccessibleMemOnly, NoUnwind]
 
