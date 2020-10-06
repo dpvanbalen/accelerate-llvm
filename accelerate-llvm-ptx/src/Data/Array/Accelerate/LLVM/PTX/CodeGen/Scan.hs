@@ -227,7 +227,10 @@ mkScanAllP1 dir aenv tp combine mseed marr = do
 
         n  <- A.sub numType sz inf
         n' <- i32 n
-        x2 <- shfl_down tp x1 (liftWord32 2) --if (tp, A.gte singleType n bd')
+        x2 <- case dir of
+          LeftToRight -> shfl_down tp x1 (liftWord32 2)
+          RightToLeft -> app2 combine x1 x1
+          --if (tp, A.gte singleType n bd')
                 -- then scanBlockSMem dir dev tp combine Nothing   x1
                 -- else scanBlockSMem dir dev tp combine (Just n') x1
 
