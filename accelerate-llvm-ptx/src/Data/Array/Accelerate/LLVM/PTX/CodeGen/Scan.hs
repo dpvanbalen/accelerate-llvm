@@ -149,9 +149,9 @@ mkScanAllP1 dir aenv tp combine mseed marr = do
   --
   let
       (arrOut, paramOut)  = mutableArray (ArrayR dim1 tp) "out"
-      (arrTmp, paramTmp)  = mutableArray (ArrayR dim1 tp) "tmp"
+      -- (arrTmp, paramTmp)  = mutableArray (ArrayR dim1 tp) "tmp"
       (arrIn,  paramIn)   = delayedArray "in" marr
-      end                 = indexHead (irArrayShape arrTmp)
+      end                 = indexHead (irArrayShape arrOut) --arrTmp
       paramEnv            = envParam aenv
       --
       config              = launchConfig dev (CUDA.incWarp dev) smem const [|| const ||]
@@ -162,7 +162,7 @@ mkScanAllP1 dir aenv tp combine mseed marr = do
           per_warp  = ws + ws `P.quot` 2
           bytes     = bytesElt tp
   --
-  makeOpenAccWith config "scanP1" (paramTmp ++ paramOut ++ paramIn ++ paramEnv) $ do
+  makeOpenAccWith config "scanP1" ({-paramTmp ++-} paramOut ++ paramIn ++ paramEnv) $ do
 
     -- Size of the input array
     sz  <- indexHead <$> delayedExtent arrIn
@@ -227,24 +227,24 @@ mkScanAllP1 dir aenv tp combine mseed marr = do
 
         n  <- A.sub numType sz inf
         n' <- i32 n
-        x2 <- if (tp, A.gte singleType n bd')
-                then scanBlockSMem dir dev tp combine Nothing   x1
-                else scanBlockSMem dir dev tp combine (Just n') x1
+        x2 <- shfl_down tp x1 (liftWord32 2) --if (tp, A.gte singleType n bd')
+                -- then scanBlockSMem dir dev tp combine Nothing   x1
+                -- else scanBlockSMem dir dev tp combine (Just n') x1
 
         -- Write this thread's scan result to memory
         writeArray TypeInt arrOut j0 x2
 
-        -- The last thread also writes its result---the aggregate for this
-        -- thread block---to the temporary partial sums array. This is only
-        -- necessary for full blocks in a multi-block scan; the final
-        -- partially-full tile does not have a successor block.
-        last <- A.sub numType bd (liftInt32 1)
-        when (A.gt singleType gd (liftInt32 1) `land'` A.eq singleType tid last) $
-          case dir of
-            LeftToRight -> writeArray TypeInt arrTmp chunk x2
-            RightToLeft -> do u <- A.sub numType end chunk
-                              v <- A.sub numType u (liftInt 1)
-                              writeArray TypeInt arrTmp v x2
+        -- -- The last thread also writes its result---the aggregate for this
+        -- -- thread block---to the temporary partial sums array. This is only
+        -- -- necessary for full blocks in a multi-block scan; the final
+        -- -- partially-full tile does not have a successor block.
+        -- last <- A.sub numType bd (liftInt32 1)
+        -- when (A.gt singleType gd (liftInt32 1) `land'` A.eq singleType tid last) $
+        --   case dir of
+        --     LeftToRight -> writeArray TypeInt arrTmp chunk x2
+        --     RightToLeft -> do u <- A.sub numType end chunk
+        --                       v <- A.sub numType u (liftInt 1)
+        --                       writeArray TypeInt arrTmp v x2
 
     return_
 
