@@ -149,9 +149,9 @@ mkScanAllP1 dir aenv tp combine mseed marr = do
   --
   let
       (arrOut, paramOut)  = mutableArray (ArrayR dim1 tp) "out"
-      -- (arrTmp, paramTmp)  = mutableArray (ArrayR dim1 tp) "tmp"
+      (arrTmp, paramTmp)  = mutableArray (ArrayR dim1 tp) "tmp"
       (arrIn,  paramIn)   = delayedArray "in" marr
-      end                 = indexHead (irArrayShape arrOut) --arrTmp
+      end                 = indexHead (irArrayShape arrTmp)
       paramEnv            = envParam aenv
       --
       config              = launchConfig dev (CUDA.incWarp dev) smem const [|| const ||]
@@ -162,7 +162,7 @@ mkScanAllP1 dir aenv tp combine mseed marr = do
           per_warp  = ws + ws `P.quot` 2
           bytes     = bytesElt tp
   --
-  makeOpenAccWith config "scanP1" ({-paramTmp ++-} paramOut ++ paramIn ++ paramEnv) $ do
+  makeOpenAccWith config "scanP1" (paramTmp ++ paramOut ++ paramIn ++ paramEnv) $ do
 
     -- Size of the input array
     sz  <- indexHead <$> delayedExtent arrIn
