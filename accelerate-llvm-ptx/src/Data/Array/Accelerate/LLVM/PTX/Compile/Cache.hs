@@ -26,7 +26,7 @@ import System.FilePath
 import Text.Printf
 import qualified Data.ByteString.Short.Char8                        as S8
 
-import Paths_accelerate_llvm_ptx
+-- import Paths_accelerate_llvm_ptx
 
 
 instance Persistent PTX where

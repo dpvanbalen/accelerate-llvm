@@ -391,12 +391,22 @@ mk_shfl :: (IsPrim a)
         -> Operands Word32             -- delta
         -> CodeGen PTX (Operands a)   -- value received
 mk_shfl mode typ val delta = do
+  -- In CUDA, the default for the final parameter, width, is warpsize.
+  -- Behind the scenes, all these instructions happen with the width parameter
+  -- before they get passed into the actual shfl instruction, so we have to
+  -- perform them here too. Alternatively, just passing '31' would maybe work
+  -- and be slightly faster. I haven't tested yet how it would behave with '31'
+  -- in small warps, nor what '0xffffffff' would do.
+  -- -DB
   warpsize <- warpSize
+  minusBy32 <- sub numType (liftInt32 32) warpsize
+  shiftl8 <- shiftL integralType minusBy32 (liftInt 8)
+  width <- bor integralType shiftl8 (liftInt32 31)
 
-  -- starting CUDA 9.0, the normal `shfl` primitives are removed in favour of the newer `shfl_sync` ones:
-  -- they behave the same, except they start with a 'mask' argument specifying which threads participate in the shuffle.
-  -- Arguably, it'd be better to branch on the minimum requirements for `shfl_sync`, or maybe even to branch
-  -- on the compute version of the gpu, but I couldn't find exact version numbers for these.
+  -- Starting CUDA 9.0, the normal `shfl` primitives are removed in favour of the newer `shfl_sync` ones:
+  -- They behave the same, except they start with a 'mask' argument specifying which threads participate in the shuffle.
+  -- Arguably, it might be better to branch on the minimum requirements for `shfl_sync`, or maybe even to branch
+  -- on the compute version of the gpu, but I couldn't find exact version numbers for these. Clang also branches on CUDA 9.0.
   let sync = Foreign.CUDA.Driver.Utils.libraryVersion >= 9000
 
   (if sync
@@ -404,7 +414,7 @@ mk_shfl mode typ val delta = do
     else call)
       (Lam primType (op primType val) $                            -- value to provide to other lanes
         Lam primType (op primType delta) $                         -- offset in shfl_up/shfl_down, source in shfl, mask for XOR in shfl_xor
-          Lam primType (op primType warpsize) $                    -- width - optional parameter whose default is warpsize, as here
+          Lam primType (op primType width) $                       -- width, see above
             Body (PrimType primType)                               --     we have to provide it, it's only optional in CUDA I guess
                   (Just NoTail)
                   ("llvm.nvvm.shfl."                               -- Name of the function, e.g. "llvm.nvvm.shfl.sync.up.i32"
