@@ -154,8 +154,8 @@ mkFoldAllS dev aenv tp combine mseed marr =
       -- reduction.
       x0 <- app1 (delayedLinearIndex arrIn) =<< int i0
       r0 <- if (tp, A.eq singleType sz bd)
-              then reduceBlockShfl dev tp combine Nothing   x0
-              else reduceBlockShfl dev tp combine (Just sz) x0
+              then reduceBlock dev tp combine Nothing   x0
+              else reduceBlock dev tp combine (Just sz) x0
 
       when (A.eq singleType tid (liftInt32 0)) $
         writeArray TypeInt32 arrOut tid =<<
@@ -345,8 +345,8 @@ mkFoldDim aenv repr@(ArrayR shr tp) combine mseed marr = do
         x0    <- app1 (delayedLinearIndex arrIn) i0
         bd    <- blockDim
         r0    <- if (tp, A.gte singleType sz' bd)
-                   then reduceBlockShfl dev tp combine Nothing    x0
-                   else reduceBlockShfl dev tp combine (Just sz') x0
+                   then reduceBlock dev tp combine Nothing    x0
+                   else reduceBlock dev tp combine (Just sz') x0
 
         -- Step 2: keep walking over the input
         bd'   <- int bd
@@ -364,7 +364,7 @@ mkFoldDim aenv repr@(ArrayR shr tp) combine mseed marr = do
                    -- bounds checks.
                    then do
                      x <- app1 (delayedLinearIndex arrIn) i
-                     y <- reduceBlockShfl dev tp combine Nothing x
+                     y <- reduceBlock dev tp combine Nothing x
                      return y
 
                    -- Otherwise, we require bounds checks when reading the input
@@ -384,7 +384,7 @@ mkFoldDim aenv repr@(ArrayR shr tp) combine mseed marr = do
                                  return $ go tp
 
                      v <- i32 v'
-                     y <- reduceBlockShfl dev tp combine (Just v) x
+                     y <- reduceBlock dev tp combine (Just v) x
                      return y
 
           if (tp, A.eq singleType tid (liftInt32 0))
@@ -415,6 +415,19 @@ mkFoldFill aenv repr seed =
   mkGenerate aenv repr (IRFun1 (const seed))
 
 
+reduceBlock
+    :: forall aenv e.
+       DeviceProperties                         -- ^ properties of the target device
+    -> TypeR e
+    -> IRFun2 PTX aenv (e -> e -> e)            -- ^ combination function
+    -> Maybe (Operands Int32)                         -- ^ number of valid elements (may be less than block size)
+    -> Operands e                                     -- ^ calling thread's input element
+    -> CodeGen PTX (Operands e)                       -- ^ thread-block-wide reduction using the specified operator (lane 0 only)
+reduceBlock dev
+  | CUDA.Compute x _ <- CUDA.computeCapability dev
+  , x >= 3     = reduceBlockShfl dev -- shfl is available starting sm_30
+  | otherwise  = reduceBlockSMem dev -- the shared memory version is always possible
+
 -- Efficient threadblock-wide reduction using the specified operator. The
 -- aggregate reduction value is stored in thread zero. Supports non-commutative
 -- operators.
@@ -431,7 +444,75 @@ reduceBlockSMem
     -> Maybe (Operands Int32)                         -- ^ number of valid elements (may be less than block size)
     -> Operands e                                     -- ^ calling thread's input element
     -> CodeGen PTX (Operands e)                       -- ^ thread-block-wide reduction using the specified operator (lane 0 only)
-reduceBlockSMem = error "removed in favour of reduceBlockShfl"
+reduceBlockSMem dev tp combine size = warpReduce >=> warpAggregate
+  where
+    int32 :: Integral a => a -> Operands Int32
+    int32 = liftInt32 . P.fromIntegral
+
+    -- Temporary storage required for each warp
+    bytes           = bytesElt tp
+    warp_smem_elems = CUDA.warpSize dev + (CUDA.warpSize dev `P.quot` 2)
+
+    -- Step 1: Reduction in every warp
+    --
+    warpReduce :: Operands e -> CodeGen PTX (Operands e)
+    warpReduce input = do
+      -- Allocate (1.5 * warpSize) elements of shared memory for each warp
+      wid   <- warpId
+      skip  <- A.mul numType wid (int32 (warp_smem_elems * bytes))
+      smem  <- dynamicSharedMem tp TypeInt32 (int32 warp_smem_elems) skip
+
+      -- Are we doing bounds checking for this warp?
+      --
+      case size of
+        -- The entire thread block is valid, so skip bounds checks.
+        Nothing ->
+          reduceWarpSMem dev tp combine smem Nothing input
+
+        -- Otherwise check how many elements are valid for this warp. If it is
+        -- full then we can still skip bounds checks for it.
+        Just n -> do
+          offset <- A.mul numType wid (int32 (CUDA.warpSize dev))
+          valid  <- A.sub numType n offset
+          if (tp, A.gte singleType valid (int32 (CUDA.warpSize dev)))
+            then reduceWarpSMem dev tp combine smem Nothing      input
+            else reduceWarpSMem dev tp combine smem (Just valid) input
+
+    -- Step 2: Aggregate per-warp reductions
+    --
+    warpAggregate :: Operands e -> CodeGen PTX (Operands e)
+    warpAggregate input = do
+      -- Allocate #warps elements of shared memory
+      bd    <- blockDim
+      warps <- A.quot integralType bd (int32 (CUDA.warpSize dev))
+      skip  <- A.mul numType warps (int32 (warp_smem_elems * bytes))
+      smem  <- dynamicSharedMem tp TypeInt32 warps skip
+
+      -- Share the per-lane aggregates
+      wid   <- warpId
+      lane  <- laneId
+      when (A.eq singleType lane (liftInt32 0)) $ do
+        writeArray TypeInt32 smem wid input
+
+      -- Wait for each warp to finish its local reduction
+      __syncthreads
+
+      -- Update the total aggregate. Thread 0 just does this sequentially (as is
+      -- done in CUB), but we could also do this cooperatively (better for
+      -- larger thread blocks?)
+      tid   <- threadIdx
+      if (tp, A.eq singleType tid (liftInt32 0))
+        then do
+          steps <- case size of
+                     Nothing -> return warps
+                     Just n  -> do
+                       a <- A.add numType n (int32 (CUDA.warpSize dev - 1))
+                       b <- A.quot integralType a (int32 (CUDA.warpSize dev))
+                       return b
+          iterFromStepTo tp (liftInt32 1) (liftInt32 1) steps input $ \step x ->
+            app2 combine x =<< readArray TypeInt32 smem step
+        else
+          return input
 
 
 -- Efficient warp-wide reduction using shared memory. The aggregate reduction
@@ -452,7 +533,44 @@ reduceWarpSMem
     -> Maybe (Operands Int32)                         -- ^ number of items that will be reduced by this warp, otherwise all lanes are valid
     -> Operands e                                     -- ^ calling thread's input element
     -> CodeGen PTX (Operands e)                       -- ^ warp-wide reduction using the specified operator (lane 0 only)
-reduceWarpSMem = error "removed in favour of reduceWarpShfl"
+reduceWarpSMem dev tp combine smem size = reduce 0
+  where
+    log2 :: Double -> Double
+    log2  = P.logBase 2
+
+    -- Number steps required to reduce warp
+    steps = P.floor . log2 . P.fromIntegral . CUDA.warpSize $ dev
+
+    -- Return whether the index is valid. Assume that constant branches are
+    -- optimised away.
+    valid i =
+      case size of
+        Nothing -> return (liftBool True)
+        Just n  -> A.lt singleType i n
+
+    -- Unfold the reduction as a recursive code generation function.
+    reduce :: Int -> Operands e -> CodeGen PTX (Operands e)
+    reduce step x
+      | step >= steps = return x
+      | otherwise     = do
+          let offset = liftInt32 (1 `P.shiftL` step)
+
+          -- share input through buffer
+          lane <- laneId
+          writeArray TypeInt32 smem lane x
+
+          __syncwarp
+
+          -- update input if in range
+          i   <- A.add numType lane offset
+          x'  <- if (tp, valid i)
+                   then app2 combine x =<< readArray TypeInt32 smem i
+                   else return x
+
+          __syncwarp
+
+          reduce (step+1) x'
+
 
 
 -- equivalent to `reduceBlockSMem`, but more efficient
@@ -468,10 +586,6 @@ reduceBlockShfl dev tp combine size = warpReduce >=> warpAggregate
   where
     int32 :: Integral a => a -> Operands Int32
     int32 = liftInt32 . P.fromIntegral
-
-    -- -- Temporary storage required for each warp
-    -- bytes           = bytesElt tp
-    -- warp_smem_elems = CUDA.warpSize dev + (CUDA.warpSize dev `P.quot` 2)
 
     -- Step 1: Reduction in every warp
     --
@@ -499,7 +613,6 @@ reduceBlockShfl dev tp combine size = warpReduce >=> warpAggregate
       -- Allocate #warps elements of shared memory
       bd    <- blockDim
       warps <- A.quot integralType bd (int32 (CUDA.warpSize dev))
-      -- skip  <- A.mul numType warps (int32 (warp_smem_elems * bytes))
       smem  <- dynamicSharedMem tp TypeInt32 warps (liftInt32 0)
 
       -- Share the per-lane aggregates

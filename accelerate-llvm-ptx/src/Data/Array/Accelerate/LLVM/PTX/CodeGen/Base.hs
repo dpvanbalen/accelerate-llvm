@@ -391,6 +391,7 @@ mk_shfl :: (IsPrim a)
         -> Operands Word32             -- delta
         -> CodeGen PTX (Operands a)   -- value received
 mk_shfl mode typ val delta = do
+
   -- In CUDA, the default for the final parameter, width, is warpsize.
   -- Behind the scenes, all these instructions happen with the width parameter
   -- before they get passed into the actual shfl instruction, so we have to
@@ -399,9 +400,9 @@ mk_shfl mode typ val delta = do
   -- in small warps, nor what '0xffffffff' would do.
   -- -DB
   warpsize <- warpSize
-  minusBy32 <- sub numType (liftInt32 32) warpsize
-  shiftl8 <- shiftL integralType minusBy32 (liftInt 8)
-  width <- bor integralType shiftl8 (liftInt32 31)
+  subOf32  <- sub         numType (liftInt32 32) warpsize
+  shiftl8  <- shiftL integralType subOf32        (liftInt 8)
+  width    <- bor    integralType shiftl8        (liftInt32 31)
 
   -- Starting CUDA 9.0, the normal `shfl` primitives are removed in favour of the newer `shfl_sync` ones:
   -- They behave the same, except they start with a 'mask' argument specifying which threads participate in the shuffle.
@@ -412,12 +413,12 @@ mk_shfl mode typ val delta = do
   (if sync
     then call . Lam primType (op primType $ liftWord32 0xffffffff) -- mask, 32 1s means all threads should participate in this shfl
     else call)
-      (Lam primType (op primType val) $                            -- value to provide to other lanes
-        Lam primType (op primType delta) $                         -- offset in shfl_up/shfl_down, source in shfl, mask for XOR in shfl_xor
-          Lam primType (op primType width) $                       -- width, see above
-            Body (PrimType primType)                               --     we have to provide it, it's only optional in CUDA I guess
-                  (Just NoTail)
-                  ("llvm.nvvm.shfl."                               -- Name of the function, e.g. "llvm.nvvm.shfl.sync.up.i32"
+      (Lam    primType (op primType val)   $                       -- value to provide to other lanes
+        Lam   primType (op primType delta) $                       -- offset in shfl_up/shfl_down, source lane, or mask to XOR
+          Lam primType (op primType width) $                       -- width, see ~10 lines up. Optional in CUDA, required in LLVM
+            Body (PrimType primType)
+                  (Just Tail)
+                  ("llvm.nvvm.shfl."                               -- name of the function, e.g. "llvm.nvvm.shfl.sync.up.i32"
                     <> (if sync then "sync." else "")              --                         or "llvm.nvvm.shfl.down.f32"
                     <> mode <> "." <> typ))
     [Convergent, InaccessibleMemOnly, NoUnwind]
