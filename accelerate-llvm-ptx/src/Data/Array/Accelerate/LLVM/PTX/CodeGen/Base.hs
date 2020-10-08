@@ -1,3 +1,5 @@
+{-# LANGUAGE EmptyCase #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE CPP                 #-}
 {-# LANGUAGE GADTs               #-}
 {-# LANGUAGE OverloadedStrings   #-}
@@ -91,6 +93,7 @@ import Control.Monad                                                ( void, (>=>
 import Control.Monad.State                                          ( gets )
 import Prelude                                                      as P
 import qualified Foreign.CUDA.Driver.Utils
+import Data.Array.Accelerate (Vec)
 
 #if MIN_VERSION_llvm_hs(10,0,0)
 import qualified LLVM.AST.Type.Instruction.RMW                      as RMW
@@ -332,44 +335,80 @@ atomicAdd_f t addr val =
 -- Shuffles
 -- ---------
 
--- CUDA has generic shuffles, but LLVM only provides i32 and f32 versions.
--- To shuffle bigger types, we'll need to cast them into 32 bit segments,
--- shuffle those, and then reassemble them. TODO
+-- | Each thread gets the value provided by lower threads
+--
 shfl_up :: TypeR a
         -> Operands a
         -> Operands Word32
         -> CodeGen PTX (Operands a)
 shfl_up = shfl "up"
 
+-- | Each thread gets the value provided by higher threads
+--
 shfl_down :: forall a. TypeR a
           -> Operands a
           -> Operands Word32
           -> CodeGen PTX (Operands a)
 shfl_down  = shfl "down"
 
-shfl :: forall a. Label -> TypeR a -> Operands a -> Operands Word32 -> CodeGen PTX (Operands a)
+---------Unused options-------
+-- Each of the shfl primitives also exists in ".p" form. This version returns, alongside the normal value,
+-- a boolean. This could be used to check whether the source lane was within range, for example. We currently
+-- do manual bounds-arithmetic to do this. Using the ".p" version might be faster in some cases, saving one or two instructions.
+
+-- These two primitives are currently not used in the backend, but are available now.
+-- shfl_xor takes a lane mask as argument. It XOR's that mask with the target lane index to get their source lane index.
+-- note: I'm not 100% sure that 'bfly' is indeed the XOR version, it's more of a process of elimination :)
+
+-- shfl_xor :: forall a. TypeR a
+--          -> Operands a
+--          -> Operands Word32
+--          -> CodeGen PTX (Operands a)
+-- shfl_xor = shfl "bfly"
+
+-- shfl_idx takes an argument representing the source lane index.
+
+-- shfl_idx :: forall a. TypeR a
+--          -> Operands a
+--          -> Operands Word32
+--          -> CodeGen PTX (Operands a)
+-- shfl_idx = shfl "idx"
+----------------------------------
+
+-------unexported shfl internals---------
+
+shfl :: Label -> TypeR a -> Operands a -> Operands Word32 -> CodeGen PTX (Operands a)
 shfl mode typer a delta = case typer of
   TupRunit -> return OP_Unit
-  TupRpair _ _ -> error "Acc.LLVM.PTX.CG.Base - I thought AoS->SoA conversion would prevent this"
+
+  -- Shuffle both sides and rebuild.
+  -- Note: this could be slightly inefficient, (Int16, Int16) can be done in 1 shuffle and this takes 2.
+  TupRpair leftR rightR -> do
+    let OP_Pair left right = a
+    left' <- shfl mode leftR left delta
+    right' <- shfl mode rightR right delta
+    return (OP_Pair left' right')
+
+  -- Cast types with =< 32 bits into one shuffle, and types with more into multiple shuffles
   TupRsingle sctyp -> case sctyp of
     SingleScalarType (NumSingleType x) -> case x of
       IntegralNumType TypeInt8   -> cast_shfl_cast_i a
       IntegralNumType TypeInt16  -> cast_shfl_cast_i a
-      IntegralNumType TypeInt32  -> shfl_i32 a           -- no cast needed
+      IntegralNumType TypeInt32  -> shfl_i32         a
       IntegralNumType TypeWord8  -> cast_shfl_cast_i a
       IntegralNumType TypeWord16 -> cast_shfl_cast_i a
       IntegralNumType TypeWord32 -> cast_shfl_cast_i a
 
-      FloatingNumType TypeHalf  -> cast_shfl_cast_f a
-      FloatingNumType TypeFloat -> shfl_f32 a            -- no cast needed
+      FloatingNumType TypeHalf   -> cast_shfl_cast_f a
+      FloatingNumType TypeFloat  -> shfl_f32         a
 
-      -- TODO: split 64-bit primitives into two 32-bit integers somehow
-      IntegralNumType TypeInt    -> undefined
-      IntegralNumType TypeWord   -> undefined
-      IntegralNumType TypeInt64  -> undefined
-      IntegralNumType TypeWord64 -> undefined
-      FloatingNumType TypeDouble -> undefined
-    VectorScalarType _ -> error "is this a thing? VectorScalarType"
+      IntegralNumType TypeInt    -> shfl_64_bit_i a
+      IntegralNumType TypeWord   -> shfl_64_bit_i a
+      IntegralNumType TypeInt64  -> shfl_64_bit_i a
+      IntegralNumType TypeWord64 -> shfl_64_bit_i a
+      FloatingNumType TypeDouble -> shfl_64_bit_f a
+
+    VectorScalarType vectyp -> shfl_vec vectyp a
   where
     shfl_i32 :: Operands Int32 -> CodeGen PTX (Operands Int32)
     shfl_i32 x = mk_shfl mode "i32" x delta
@@ -377,11 +416,43 @@ shfl mode typer a delta = case typer of
     shfl_f32 :: Operands Float -> CodeGen PTX (Operands Float)
     shfl_f32 x = mk_shfl mode "f32" x delta
 
+    -- Shuffle a (<32) bit integral
     cast_shfl_cast_i :: (IsIntegral a, IsNum a) => Operands a -> CodeGen PTX (Operands a)
     cast_shfl_cast_i = A.fromIntegral integralType numType >=> shfl_i32 >=> A.fromIntegral integralType numType
 
+    -- Shuffle a (<32) bit floating point number
     cast_shfl_cast_f :: (IsFloating a, IsNum a) => Operands a -> CodeGen PTX (Operands a)
     cast_shfl_cast_f = A.toFloating numType floatingType >=> shfl_f32 >=> A.toFloating numType floatingType
+
+    -- Shuffle a 64 bit integral
+    shfl_64_bit_i :: (IsIntegral a) => Operands a -> CodeGen PTX (Operands a)
+    shfl_64_bit_i x = do
+      let vectype = VectorScalarType (VectorType 2 (NumSingleType (IntegralNumType TypeInt32))) :: ScalarType (Vec 2 Int32)
+      x' <- bitcast scalarType vectype x
+      x'' <- shfl mode (TupRsingle vectype) x' delta
+      bitcast vectype scalarType x''
+
+    -- Shuffle a 64 bit floating point number
+    shfl_64_bit_f :: (IsFloating a) => Operands a -> CodeGen PTX (Operands a)
+    shfl_64_bit_f x = do
+      let vecType = VectorType 2 (NumSingleType (FloatingNumType TypeFloat)) :: VectorType (Vec 2 Float)
+      let vecScalType = VectorScalarType vecType
+      x' <- bitcast scalarType vecScalType x
+      x'' <- shfl_vec vecType x'
+      bitcast vecScalType scalarType x''
+
+    shfl_vec :: VectorType a -> Operands a -> CodeGen PTX (Operands a)
+    shfl_vec (VectorType 0 _) x = return x
+    shfl_vec (VectorType n t) x = go (P.fromIntegral n) x (VectorType n t)
+
+    go :: Int32 -> Operands (Vec n a) -> VectorType (Vec n a) -> CodeGen PTX (Operands (Vec n a))
+    go 0 x _ = return x
+    go n x vt@(VectorType _ t) = do
+      e <- instr $ ExtractElement (n-1) (op vt x)
+      e' <- shfl mode (TupRsingle (SingleScalarType t)) e delta
+      x' <- instr $ InsertElement (n-1) (op vt x) (op (SingleScalarType t) e')
+      go (n-1) x' vt
+
 
 -- Only works for 32-bit int or floats!!
 mk_shfl :: (IsPrim a)
