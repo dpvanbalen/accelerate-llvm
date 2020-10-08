@@ -124,15 +124,17 @@ mkFoldAllS
     -> CodeGen    PTX      (IROpenAcc PTX aenv (Scalar e))
 mkFoldAllS dev aenv tp combine mseed marr =
   let
-      (arrOut, paramOut)  = mutableArray (ArrayR dim0 tp) "out"
-      (arrIn,  paramIn)   = delayedArray "in" marr
-      paramEnv            = envParam aenv
+      (arrOut, paramOut)   = mutableArray (ArrayR dim0 tp) "out"
+      (arrIn,  paramIn)    = delayedArray "in" marr
+      paramEnv             = envParam aenv
       --
-      config              = launchConfig dev (CUDA.incWarp dev) smem multipleOf multipleOfQ
-      smem n              = warps * bytes
+      config               = launchConfig dev (CUDA.incWarp dev) smem multipleOf multipleOfQ
+      smem n | useSMem dev = warps * (1 + per_warp) * bytes
+             | otherwise   = warps * bytes
         where
           ws        = CUDA.warpSize dev
           warps     = n `P.quot` ws
+          per_warp  = ws + ws `P.quot` 2
           bytes     = bytesElt tp
   in
   makeOpenAccWith config "foldAllS" (paramOut ++ paramIn ++ paramEnv) $ do
@@ -180,16 +182,18 @@ mkFoldAllM1
     -> CodeGen    PTX      (IROpenAcc PTX aenv (Scalar e))
 mkFoldAllM1 dev aenv tp combine marr =
   let
-      (arrTmp, paramTmp)  = mutableArray (ArrayR dim1 tp) "tmp"
-      (arrIn,  paramIn)   = delayedArray "in" marr
-      paramEnv            = envParam aenv
-      start               = liftInt 0
+      (arrTmp, paramTmp)   = mutableArray (ArrayR dim1 tp) "tmp"
+      (arrIn,  paramIn)    = delayedArray "in" marr
+      paramEnv             = envParam aenv
+      start                = liftInt 0
       --
-      config              = launchConfig dev (CUDA.incWarp dev) smem const [|| const ||]
-      smem n              = warps * bytes
+      config               = launchConfig dev (CUDA.incWarp dev) smem const [|| const ||]
+      smem n | useSMem dev = warps * (1 + per_warp) * bytes
+             | otherwise   = warps * bytes
         where
           ws        = CUDA.warpSize dev
           warps     = n `P.quot` ws
+          per_warp  = ws + ws `P.quot` 2
           bytes     = bytesElt tp
   in
   makeOpenAccWith config "foldAllM1" (paramTmp ++ paramIn ++ paramEnv) $ do
@@ -235,16 +239,18 @@ mkFoldAllM2
     -> CodeGen PTX      (IROpenAcc PTX aenv (Scalar e))
 mkFoldAllM2 dev aenv tp combine mseed =
   let
-      (arrTmp, paramTmp)  = mutableArray (ArrayR dim1 tp) "tmp"
-      (arrOut, paramOut)  = mutableArray (ArrayR dim1 tp) "out"
-      paramEnv            = envParam aenv
-      start               = liftInt 0
+      (arrTmp, paramTmp)   = mutableArray (ArrayR dim1 tp) "tmp"
+      (arrOut, paramOut)   = mutableArray (ArrayR dim1 tp) "out"
+      paramEnv             = envParam aenv
+      start                = liftInt 0
       --
-      config              = launchConfig dev (CUDA.incWarp dev) smem const [|| const ||]
-      smem n              = warps * bytes
+      config               = launchConfig dev (CUDA.incWarp dev) smem const [|| const ||]
+      smem n | useSMem dev = warps * (1 + per_warp) * bytes
+             | otherwise   = warps * bytes
         where
           ws        = CUDA.warpSize dev
           warps     = n `P.quot` ws
+          per_warp  = ws + ws `P.quot` 2
           bytes     = bytesElt tp
   in
   makeOpenAccWith config "foldAllM2" (paramTmp ++ paramOut ++ paramEnv) $ do
@@ -303,15 +309,17 @@ mkFoldDim aenv repr@(ArrayR shr tp) combine mseed marr = do
   dev <- liftCodeGen $ gets ptxDeviceProperties
   --
   let
-      (arrOut, paramOut)  = mutableArray repr "out"
-      (arrIn,  paramIn)   = delayedArray "in" marr
-      paramEnv            = envParam aenv
+      (arrOut, paramOut)   = mutableArray repr "out"
+      (arrIn,  paramIn)    = delayedArray "in" marr
+      paramEnv             = envParam aenv
       --
-      config              = launchConfig dev (CUDA.incWarp dev) smem const [|| const ||]
-      smem n              = warps * bytes
+      config               = launchConfig dev (CUDA.incWarp dev) smem const [|| const ||]
+      smem n | useSMem dev = warps * (1 + per_warp) * bytes
+             | otherwise   = warps * bytes
         where
           ws        = CUDA.warpSize dev
           warps     = n `P.quot` ws
+          per_warp  = ws + ws `P.quot` 2
           bytes     = bytesElt tp
   --
   makeOpenAccWith config "fold" (paramOut ++ paramIn ++ paramEnv) $ do
@@ -420,13 +428,12 @@ reduceBlock
        DeviceProperties                         -- ^ properties of the target device
     -> TypeR e
     -> IRFun2 PTX aenv (e -> e -> e)            -- ^ combination function
-    -> Maybe (Operands Int32)                         -- ^ number of valid elements (may be less than block size)
-    -> Operands e                                     -- ^ calling thread's input element
-    -> CodeGen PTX (Operands e)                       -- ^ thread-block-wide reduction using the specified operator (lane 0 only)
+    -> Maybe (Operands Int32)                   -- ^ number of valid elements (may be less than block size)
+    -> Operands e                               -- ^ calling thread's input element
+    -> CodeGen PTX (Operands e)                 -- ^ thread-block-wide reduction using the specified operator (lane 0 only)
 reduceBlock dev
-  | CUDA.Compute x _ <- CUDA.computeCapability dev
-  , x >= 3     = reduceBlockShfl dev -- shfl is available starting sm_30
-  | otherwise  = reduceBlockSMem dev -- the shared memory version is always possible
+  | useSMem dev = reduceBlockSMem dev
+  | otherwise   = reduceBlockShfl dev
 
 -- Efficient threadblock-wide reduction using the specified operator. The
 -- aggregate reduction value is stored in thread zero. Supports non-commutative
@@ -736,6 +743,14 @@ reduceFromTo dev tp from to combine get set = do
 
 -- Utilities
 -- ---------
+
+-- Determine whether we use the shfl or the smem version. Shfl instructions are available for compute >= 3.0
+useSMem :: DeviceProperties -> Bool
+useSMem dev
+  | CUDA.Compute x _ <- CUDA.computeCapability dev
+  , x >= 3    = False
+  | otherwise = True
+
 
 i32 :: Operands Int -> CodeGen PTX (Operands Int32)
 i32 = A.fromIntegral integralType numType
