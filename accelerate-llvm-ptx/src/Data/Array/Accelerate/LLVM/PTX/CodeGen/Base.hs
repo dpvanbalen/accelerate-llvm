@@ -473,7 +473,10 @@ mk_shfl mode typ val delta = do
   warpsize <- warpSize
   subOf32  <- sub         numType (liftInt32 32) warpsize
   shiftl8  <- shiftL integralType subOf32        (liftInt 8)
-  width    <- bor    integralType shiftl8        (liftInt32 31)
+  width    <- case mode of
+    "up"   -> return shiftl8
+    "down" -> bor    integralType shiftl8        (liftInt32 31)
+    _ -> error "find out what quirks other modes have by compiling them with LLVM"
 
   -- Starting CUDA 9.0, the normal `shfl` primitives are removed in favour of the newer `shfl_sync` ones:
   -- They behave the same, except they start with a 'mask' argument specifying which threads participate in the shuffle.
