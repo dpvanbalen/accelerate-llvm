@@ -1350,13 +1350,7 @@ scanBlockShfl dir dev tp combine nelem = warpScan >=> warpPrefix
 
     -- Step 1: Scan in every warp
     warpScan :: Operands e -> CodeGen PTX (Operands e)
-    warpScan input = do
-      -- Allocate (1.5 * warpSize) elements of shared memory for each warp
-      -- (individually addressable by each warp)
-      -- wid   <- warpId
-      -- skip  <- A.mul numType wid (int32 warp_smem_bytes)
-      -- smem  <- dynamicSharedMem tp TypeInt32 (int32 warp_smem_elems) skip
-      scanWarpShfl dir dev tp combine input
+    warpScan = scanWarpShfl dir dev tp combine
 
     -- Step 2: Collect the aggregate results of each warp to compute the prefix
     -- values for each warp and combine with the partial result to compute each
@@ -1387,9 +1381,10 @@ scanBlockShfl dir dev tp combine nelem = warpScan >=> warpPrefix
           -- their prefix value. We do this sequentially, but could also have
           -- warp 0 do it cooperatively if we limit thread block sizes to
           -- (warp size ^ 2).
-          steps  <- case nelem of
-                      Nothing -> return wid
-                      Just n  -> A.min singleType wid =<< A.quot integralType n (int32 (CUDA.warpSize dev))
+          let steps = wid
+          -- case nelem of
+          --             Nothing -> return wid
+          --             Just n  -> A.min singleType wid =<< A.quot integralType n (int32 (CUDA.warpSize dev))
 
           p0     <- readArray TypeInt32 smem (liftInt32 0)
           prefix <- iterFromStepTo tp (liftInt32 1) (liftInt32 1) steps p0 $ \step x -> do
@@ -1421,7 +1416,7 @@ scanWarpShfl dir dev tp combine = scan 0
     -- Unfold the scan as a recursive code generation function
     scan :: Int -> Operands e -> CodeGen PTX (Operands e)
     scan step x
-      | step >= steps - 1 = return x
+      | step >= steps = return x
       | otherwise     = do
           let offset = 1 `P.shiftL` step
 
