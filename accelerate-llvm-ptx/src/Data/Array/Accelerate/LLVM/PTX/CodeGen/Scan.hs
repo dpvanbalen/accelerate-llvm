@@ -83,8 +83,8 @@ mkScan aenv repr dir combine seed arr
   where
     codeScan = case repr of
       ArrayR (ShapeRsnoc ShapeRz) tp -> [ mkScanAllP1 dir aenv tp   combine seed arr
-                                        -- , mkScanAllP2 dir aenv tp   combine
-                                        -- , mkScanAllP3 dir aenv tp   combine seed
+                                        , mkScanAllP2 dir aenv tp   combine
+                                        , mkScanAllP3 dir aenv tp   combine seed
                                         ]
       _                              -> [ mkScanDim   dir aenv repr combine seed arr
                                         ]
@@ -1421,7 +1421,7 @@ scanWarpShfl dir dev tp combine = scan 0
     -- Unfold the scan as a recursive code generation function
     scan :: Int -> Operands e -> CodeGen PTX (Operands e)
     scan step x
-      | step >= steps = return x
+      | step >= steps - 1 = return x
       | otherwise     = do
           let offset = 1 `P.shiftL` step
 
