@@ -399,7 +399,7 @@ shfl mode typer a delta = case typer of
       IntegralNumType TypeWord16 -> cast_shfl_cast_i a
       IntegralNumType TypeWord32 -> cast_shfl_cast_i a
 
-      FloatingNumType TypeHalf   -> cast_shfl_cast_f a
+      FloatingNumType TypeHalf   -> cast_shfl_cast_f16 a
       FloatingNumType TypeFloat  -> shfl_f32         a
 
       IntegralNumType TypeInt    -> shfl_64_bit_i a
@@ -418,11 +418,15 @@ shfl mode typer a delta = case typer of
 
     -- Shuffle a (<32) bit integral
     cast_shfl_cast_i :: (IsIntegral a, IsNum a) => Operands a -> CodeGen PTX (Operands a)
-    cast_shfl_cast_i = A.fromIntegral integralType numType >=> shfl_i32 >=> A.fromIntegral integralType numType
+    cast_shfl_cast_i = A.fromIntegral integralType numType
+                    >=> shfl_i32
+                    >=> A.fromIntegral integralType numType
 
-    -- Shuffle a (<32) bit floating point number
-    cast_shfl_cast_f :: (IsFloating a, IsNum a) => Operands a -> CodeGen PTX (Operands a)
-    cast_shfl_cast_f = A.toFloating numType floatingType >=> shfl_f32 >=> A.toFloating numType floatingType
+    -- Shuffle a 16 bit floating point number
+    cast_shfl_cast_f16 :: Operands Half -> CodeGen PTX (Operands Half)
+    cast_shfl_cast_f16 = bitcast scalarType scalarType
+                      >=> cast_shfl_cast_i @Int16
+                      >=> bitcast scalarType scalarType
 
     -- Shuffle a 64 bit integral
     shfl_64_bit_i :: (IsIntegral a) => Operands a -> CodeGen PTX (Operands a)

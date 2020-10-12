@@ -43,6 +43,19 @@ import Data.Array.Accelerate.LLVM.CodeGen.Monad
 import Data.Array.Accelerate.LLVM.CodeGen.Sugar
 import Data.Array.Accelerate.LLVM.PTX.Analysis.Launch
 import Data.Array.Accelerate.LLVM.PTX.CodeGen.Base
+    ( (+++),
+      __syncthreads,
+      __syncwarp,
+      blockDim,
+      blockIdx,
+      dynamicSharedMem,
+      gridDim,
+      laneId,
+      makeOpenAccWith,
+      shfl_up,
+      staticSharedMem,
+      threadIdx,
+      warpId )
 import Data.Array.Accelerate.LLVM.PTX.CodeGen.Generate
 import Data.Array.Accelerate.LLVM.PTX.Target
 
@@ -1381,10 +1394,9 @@ scanBlockShfl dir dev tp combine nelem = warpScan >=> warpPrefix
           -- their prefix value. We do this sequentially, but could also have
           -- warp 0 do it cooperatively if we limit thread block sizes to
           -- (warp size ^ 2).
-          let steps = wid
-          -- case nelem of
-          --             Nothing -> return wid
-          --             Just n  -> A.min singleType wid =<< A.quot integralType n (int32 (CUDA.warpSize dev))
+          steps <- case nelem of
+                      Nothing -> return wid
+                      Just n  -> A.min singleType wid =<< A.quot integralType n (int32 (CUDA.warpSize dev))
 
           p0     <- readArray TypeInt32 smem (liftInt32 0)
           prefix <- iterFromStepTo tp (liftInt32 1) (liftInt32 1) steps p0 $ \step x -> do
@@ -1433,8 +1445,6 @@ scanWarpShfl dir dev tp combine = scan 0
 
                     else
                       return x
-
-          __syncwarp
 
           scan (step+1) x'
 
