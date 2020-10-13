@@ -1,10 +1,10 @@
-accelerate-llvm-ptx> test (suite: nofib-llvm-ptx, args: --num-threads=1)
+accelerate-llvm-native> test (suite: nofib-llvm-native, args: --num-threads=1)
 
-nofib-llvm-ptx
+nofib-llvm-native
   sharing
     simple:                   OK
     ordering:                 OK
-    sort:                     OK (0.02s)
+    sort:                     OK (0.03s)
     blowup:                   OK
     bfs:                      OK
     same level
@@ -91,1455 +91,1359 @@ nofib-llvm-ptx
     map
       Int64
         DIM0
-          neg:                OK (0.12s)
+          neg:                OK (0.03s)
               ✓ neg passed 100 tests.
-          abs:                FAIL (0.03s)
-              ✗ abs failed at src/Data/Array/Accelerate/Test/NoFib/Prelude/Map.hs:167:3
-                after 1 test.
-              
-                ━━━ Exception (ErrorCall) ━━━
-                
-                *** Internal error in package accelerate ***
-                *** Please submit a bug report at https://github.com/AccelerateHS/accelerate/issues
-                
-                ptxas - -o /home/dpvanbalen/.cache/accelerate/accelerate-llvm-1.3.0.0/accelerate-llvm-ptx-1.3.0.0/llvm-hs-9.0.1/nvptx64-nvidia-cuda/sm75/rel/morpb97f7ee1b38234ec8f233c8400ff6512f102d4251ddcf4a4d2fad6f35dd2ccc4.sass -arch=sm_75 (exit 255)
-                ptxas fatal   : Unresolved extern function 'llabs'
-                
-                
-                CallStack (from HasCallStack):
-                  internalError: Data.Array.Accelerate.LLVM.PTX.Compile:185:24
-                  compileCUBIN: Data.Array.Accelerate.LLVM.PTX.Compile:123:20
-                  compile: Data.Array.Accelerate.LLVM.PTX.Compile:88:22
-              
-                This failure can be reproduced by running:
-                > recheck (Size 0) (Seed 7190669494402908063 14169010261592922467) abs
-              
-            Use '--hedgehog-replay "Size 0 Seed 7190669494402908063 14169010261592922467"' to reproduce.
-          signum:             OK (0.05s)
+          abs:                OK (0.02s)
+              ✓ abs passed 100 tests.
+          signum:             OK (0.02s)
               ✓ signum passed 100 tests.
-          complement:         OK (0.05s)
+          complement:         OK (0.02s)
               ✓ complement passed 100 tests.
-          popCount:           OK (0.05s)
+          popCount:           OK (0.02s)
               ✓ popCount passed 100 tests.
-          countLeadingZeros:  OK (0.05s)
+          countLeadingZeros:  OK (0.02s)
               ✓ countLeadingZeros passed 100 tests.
-          countTrailingZeros: OK (0.05s)
+          countTrailingZeros: OK (0.02s)
               ✓ countTrailingZeros passed 100 tests.
-          fromIntegral:       OK (0.05s)
+          fromIntegral:       OK (0.02s)
               ✓ fromIntegral passed 100 tests.
         DIM1
-          neg:                OK (0.10s)
+          neg:                OK (0.20s)
               ✓ neg passed 100 tests.
-          abs:                FAIL (0.03s)
-              ✗ abs failed at src/Data/Array/Accelerate/Test/NoFib/Prelude/Map.hs:167:3
-                after 1 test.
-              
-                ━━━ Exception (ErrorCall) ━━━
-                
-                *** Internal error in package accelerate ***
-                *** Please submit a bug report at https://github.com/AccelerateHS/accelerate/issues
-                
-                ptxas - -o /home/dpvanbalen/.cache/accelerate/accelerate-llvm-1.3.0.0/accelerate-llvm-ptx-1.3.0.0/llvm-hs-9.0.1/nvptx64-nvidia-cuda/sm75/rel/morp8127750ab4a210bbdc50935d802acf5c67d3e3a1f602a599f823270870336a06.sass -arch=sm_75 (exit 255)
-                ptxas fatal   : Unresolved extern function 'llabs'
-                
-                
-                CallStack (from HasCallStack):
-                  internalError: Data.Array.Accelerate.LLVM.PTX.Compile:185:24
-                  compileCUBIN: Data.Array.Accelerate.LLVM.PTX.Compile:123:20
-                  compile: Data.Array.Accelerate.LLVM.PTX.Compile:88:22
-              
-                This failure can be reproduced by running:
-                > recheck (Size 0) (Seed 8742983300130829189 14227818390680044687) abs
-              
-            Use '--hedgehog-replay "Size 0 Seed 8742983300130829189 14227818390680044687"' to reproduce.
-          signum:             OK (0.10s)
+          abs:                OK (0.23s)
+              ✓ abs passed 100 tests.
+          signum:             OK (0.21s)
               ✓ signum passed 100 tests.
-          complement:         OK (0.10s)
+          complement:         OK (0.21s)
               ✓ complement passed 100 tests.
-          popCount:           OK (0.11s)
-              ✓ popCount passed 100 tests.
-          countLeadingZeros:  OK (0.10s)
-              ✓ countLeadingZeros passed 100 tests.
-          countTrailingZeros: OK (0.11s)
-              ✓ countTrailingZeros passed 100 tests.
-          fromIntegral:       OK (0.11s)
-              ✓ fromIntegral passed 100 tests.
-        DIM2
-          neg:                OK (0.18s)
-              ✓ neg passed 100 tests.
-          abs:                FAIL (0.03s)
-              ✗ abs failed at src/Data/Array/Accelerate/Test/NoFib/Prelude/Map.hs:167:3
-                after 1 test.
-              
-                ━━━ Exception (ErrorCall) ━━━
-                
-                *** Internal error in package accelerate ***
-                *** Please submit a bug report at https://github.com/AccelerateHS/accelerate/issues
-                
-                ptxas - -o /home/dpvanbalen/.cache/accelerate/accelerate-llvm-1.3.0.0/accelerate-llvm-ptx-1.3.0.0/llvm-hs-9.0.1/nvptx64-nvidia-cuda/sm75/rel/morpc00152f0ae6c8771fe5ef618540e7878a8e8c0b5f756cc8c2dd022931e05d768.sass -arch=sm_75 (exit 255)
-                ptxas fatal   : Unresolved extern function 'llabs'
-                
-                
-                CallStack (from HasCallStack):
-                  internalError: Data.Array.Accelerate.LLVM.PTX.Compile:185:24
-                  compileCUBIN: Data.Array.Accelerate.LLVM.PTX.Compile:123:20
-                  compile: Data.Array.Accelerate.LLVM.PTX.Compile:88:22
-              
-                This failure can be reproduced by running:
-                > recheck (Size 0) (Seed 7054674401113353933 11516577743892164983) abs
-              
-            Use '--hedgehog-replay "Size 0 Seed 7054674401113353933 11516577743892164983"' to reproduce.
-          signum:             OK (0.22s)
-              ✓ signum passed 100 tests.
-          complement:         OK (0.24s)
-              ✓ complement passed 100 tests.
-          popCount:           OK (0.21s)
+          popCount:           OK (0.19s)
               ✓ popCount passed 100 tests.
           countLeadingZeros:  OK (0.19s)
               ✓ countLeadingZeros passed 100 tests.
-          countTrailingZeros: OK (0.18s)
+          countTrailingZeros: OK (0.22s)
               ✓ countTrailingZeros passed 100 tests.
-          fromIntegral:       OK (0.18s)
+          fromIntegral:       OK (0.28s)
+              ✓ fromIntegral passed 100 tests.
+        DIM2
+          neg:                OK (0.35s)
+              ✓ neg passed 100 tests.
+          abs:                OK (0.36s)
+              ✓ abs passed 100 tests.
+          signum:             OK (0.31s)
+              ✓ signum passed 100 tests.
+          complement:         OK (0.50s)
+              ✓ complement passed 100 tests.
+          popCount:           OK (0.37s)
+              ✓ popCount passed 100 tests.
+          countLeadingZeros:  OK (0.38s)
+              ✓ countLeadingZeros passed 100 tests.
+          countTrailingZeros: OK (0.50s)
+              ✓ countTrailingZeros passed 100 tests.
+          fromIntegral:       OK (0.60s)
               ✓ fromIntegral passed 100 tests.
       Double
         DIM0
-          neg:                OK (0.05s)
+          neg:                OK (0.02s)
               ✓ neg passed 100 tests.
-          abs:                OK (0.50s)
+          abs:                OK (0.03s)
               ✓ abs passed 100 tests.
-          signum:             OK (0.01s)
+          signum:             OK (0.03s)
               ✓ signum passed 100 tests.
-          recip:              OK (0.05s)
+          recip:              OK (0.02s)
               ✓ recip passed 100 tests.
-          sin:                OK (0.28s)
+          sin:                OK (0.03s)
               ✓ sin passed 100 tests.
-          cos:                OK (0.26s)
+          cos:                OK (0.02s)
               ✓ cos passed 100 tests.
-          tan:                OK (0.25s)
+          tan:                OK (0.02s)
               ✓ tan passed 100 tests.
-          asin:               OK (0.26s)
+          asin:               OK (0.02s)
               ✓ asin passed 100 tests.
-          acos:               OK (0.26s)
+          acos:               OK (0.02s)
               ✓ acos passed 100 tests.
-          atan:               OK (0.26s)
+          atan:               OK (0.02s)
               ✓ atan passed 100 tests.
-          asinh:              OK (0.27s)
+          asinh:              OK (0.02s)
               ✓ asinh passed 100 tests.
-          acosh:              OK (0.24s)
+          acosh:              OK (0.03s)
+              ✓ acosh passed 100 tests.
+          atanh:              OK (0.02s)
+              ✓ atanh passed 100 tests.
+          exp:                OK (0.02s)
+              ✓ exp passed 100 tests.
+          sqrt:               OK (0.02s)
+              ✓ sqrt passed 100 tests.
+          log:                OK (0.02s)
+              ✓ log passed 100 tests.
+          truncate:           OK (0.02s)
+              ✓ truncate passed 100 tests.
+          round:              OK (0.02s)
+              ✓ round passed 100 tests.
+          floor:              OK (0.02s)
+              ✓ floor passed 100 tests.
+          ceiling:            OK (0.02s)
+              ✓ ceiling passed 100 tests.
+        DIM1
+          neg:                OK (0.36s)
+              ✓ neg passed 100 tests.
+          abs:                OK (0.26s)
+              ✓ abs passed 100 tests.
+          signum:             OK (0.32s)
+              ✓ signum passed 100 tests.
+          recip:              OK (0.33s)
+              ✓ recip passed 100 tests.
+          sin:                OK (0.29s)
+              ✓ sin passed 100 tests.
+          cos:                OK (0.29s)
+              ✓ cos passed 100 tests.
+          tan:                OK (0.34s)
+              ✓ tan passed 100 tests.
+          asin:               OK (0.29s)
+              ✓ asin passed 100 tests.
+          acos:               OK (0.27s)
+              ✓ acos passed 100 tests.
+          atan:               OK (0.31s)
+              ✓ atan passed 100 tests.
+          asinh:              OK (0.26s)
+              ✓ asinh passed 100 tests.
+          acosh:              OK (0.31s)
               ✓ acosh passed 100 tests.
           atanh:              OK (0.26s)
               ✓ atanh passed 100 tests.
-          exp:                OK (0.26s)
+          exp:                OK (0.32s)
               ✓ exp passed 100 tests.
-          sqrt:               OK (0.26s)
+          sqrt:               OK (0.29s)
               ✓ sqrt passed 100 tests.
-          log:                OK (0.24s)
+          log:                OK (0.39s)
               ✓ log passed 100 tests.
-          truncate:           OK (0.05s)
+          truncate:           OK (0.27s)
               ✓ truncate passed 100 tests.
-          round:              OK (0.25s)
+          round:              OK (0.27s)
               ✓ round passed 100 tests.
-          floor:              OK (0.25s)
+          floor:              OK (0.26s)
               ✓ floor passed 100 tests.
-          ceiling:            OK (0.26s)
-              ✓ ceiling passed 100 tests.
-        DIM1
-          neg:                OK (0.14s)
-              ✓ neg passed 100 tests.
-          abs:                OK (0.32s)
-              ✓ abs passed 100 tests.
-          signum:             OK (0.11s)
-              ✓ signum passed 100 tests.
-          recip:              OK (0.15s)
-              ✓ recip passed 100 tests.
-          sin:                OK (0.37s)
-              ✓ sin passed 100 tests.
-          cos:                OK (0.37s)
-              ✓ cos passed 100 tests.
-          tan:                OK (0.36s)
-              ✓ tan passed 100 tests.
-          asin:               OK (0.34s)
-              ✓ asin passed 100 tests.
-          acos:               OK (0.35s)
-              ✓ acos passed 100 tests.
-          atan:               OK (0.35s)
-              ✓ atan passed 100 tests.
-          asinh:              OK (0.34s)
-              ✓ asinh passed 100 tests.
-          acosh:              OK (0.37s)
-              ✓ acosh passed 100 tests.
-          atanh:              OK (0.35s)
-              ✓ atanh passed 100 tests.
-          exp:                OK (0.35s)
-              ✓ exp passed 100 tests.
-          sqrt:               OK (0.34s)
-              ✓ sqrt passed 100 tests.
-          log:                OK (0.34s)
-              ✓ log passed 100 tests.
-          truncate:           OK (0.14s)
-              ✓ truncate passed 100 tests.
-          round:              OK (0.34s)
-              ✓ round passed 100 tests.
-          floor:              OK (0.35s)
-              ✓ floor passed 100 tests.
-          ceiling:            OK (0.35s)
+          ceiling:            OK (0.28s)
               ✓ ceiling passed 100 tests.
         DIM2
-          neg:                OK (0.26s)
+          neg:                OK (0.55s)
               ✓ neg passed 100 tests.
           abs:                OK (0.46s)
               ✓ abs passed 100 tests.
-          signum:             OK (0.19s)
+          signum:             OK (0.62s)
               ✓ signum passed 100 tests.
-          recip:              OK (0.23s)
+          recip:              OK (0.43s)
               ✓ recip passed 100 tests.
-          sin:                OK (0.41s)
+          sin:                OK (0.55s)
               ✓ sin passed 100 tests.
-          cos:                OK (0.47s)
+          cos:                OK (0.58s)
               ✓ cos passed 100 tests.
-          tan:                OK (0.49s)
+          tan:                OK (0.58s)
               ✓ tan passed 100 tests.
-          asin:               OK (0.49s)
+          asin:               OK (0.54s)
               ✓ asin passed 100 tests.
-          acos:               OK (0.42s)
+          acos:               OK (0.47s)
               ✓ acos passed 100 tests.
-          atan:               OK (0.43s)
+          atan:               OK (0.62s)
               ✓ atan passed 100 tests.
-          asinh:              OK (0.42s)
+          asinh:              OK (0.48s)
               ✓ asinh passed 100 tests.
           acosh:              OK (0.50s)
               ✓ acosh passed 100 tests.
-          atanh:              OK (0.48s)
+          atanh:              OK (0.52s)
               ✓ atanh passed 100 tests.
-          exp:                OK (0.44s)
+          exp:                OK (0.67s)
               ✓ exp passed 100 tests.
-          sqrt:               OK (0.44s)
+          sqrt:               OK (0.60s)
               ✓ sqrt passed 100 tests.
-          log:                OK (0.55s)
+          log:                OK (0.59s)
               ✓ log passed 100 tests.
-          truncate:           OK (0.28s)
+          truncate:           OK (0.43s)
               ✓ truncate passed 100 tests.
-          round:              OK (0.47s)
+          round:              OK (0.58s)
               ✓ round passed 100 tests.
-          floor:              OK (0.42s)
+          floor:              OK (0.61s)
               ✓ floor passed 100 tests.
-          ceiling:            OK (0.46s)
+          ceiling:            OK (0.53s)
               ✓ ceiling passed 100 tests.
     zipWith
       Int64
         DIM0
-          (+):                OK (0.05s)
+          (+):                OK (0.03s)
               ✓ (+) passed 100 tests.
-          (-):                OK (0.05s)
+          (-):                OK (0.03s)
               ✓ (-) passed 100 tests.
           (*):                OK (0.05s)
               ✓ (*) passed 100 tests.
-          quot:               OK (0.06s)
+          quot:               OK (0.04s)
               ✓ quot passed 100 tests.
-          rem:                OK (0.06s)
+          rem:                OK (0.04s)
               ✓ rem passed 100 tests.
-          quotRem:            OK (0.06s)
+          quotRem:            OK (0.04s)
               ✓ quotRem passed 100 tests.
-          div:                OK (0.06s)
+          div:                OK (0.05s)
               ✓ div passed 100 tests.
-          mod:                OK (0.06s)
+          mod:                OK (0.03s)
               ✓ mod passed 100 tests.
-          divMod:             OK (0.07s)
+          divMod:             OK (0.04s)
               ✓ divMod passed 100 tests.
-          (.&.):              OK (0.05s)
+          (.&.):              OK (0.04s)
               ✓ (.&.) passed 100 tests.
-          (.|.):              OK (0.05s)
+          (.|.):              OK (0.03s)
               ✓ (.|.) passed 100 tests.
-          xor:                OK (0.05s)
+          xor:                OK (0.03s)
               ✓ xor passed 100 tests.
-          shift:              OK (0.05s)
+          shift:              OK (0.06s)
               ✓ shift passed 100 tests.
-          shiftL:             OK (0.05s)
+          shiftL:             OK (0.03s)
               ✓ shiftL passed 100 tests.
-          shiftR:             OK (0.05s)
+          shiftR:             OK (0.03s)
               ✓ shiftR passed 100 tests.
-          rotate:             OK (0.06s)
+          rotate:             OK (0.03s)
               ✓ rotate passed 100 tests.
-          rotateL:            OK (0.05s)
+          rotateL:            OK (0.04s)
               ✓ rotateL passed 100 tests.
-          rotateR:            OK (0.06s)
+          rotateR:            OK (0.03s)
               ✓ rotateR passed 100 tests.
-          (<):                OK (0.06s)
+          (<):                OK (0.04s)
               ✓ (<) passed 100 tests.
-          (>):                OK (0.05s)
+          (>):                OK (0.04s)
               ✓ (>) passed 100 tests.
-          (<=):               OK (0.05s)
+          (<=):               OK (0.03s)
               ✓ (<=) passed 100 tests.
           (>=):               OK (0.05s)
               ✓ (>=) passed 100 tests.
-          (==):               OK (0.05s)
+          (==):               OK (0.04s)
               ✓ (==) passed 100 tests.
-          (/=):               OK (0.05s)
+          (/=):               OK (0.03s)
               ✓ (/=) passed 100 tests.
-          min:                OK (0.05s)
+          min:                OK (0.03s)
               ✓ min passed 100 tests.
-          max:                OK (0.05s)
+          max:                OK (0.04s)
               ✓ max passed 100 tests.
         DIM1
-          (+):                OK (0.18s)
+          (+):                OK (0.56s)
               ✓ (+) passed 100 tests.
-          (-):                OK (0.18s)
+          (-):                OK (0.62s)
               ✓ (-) passed 100 tests.
-          (*):                OK (0.16s)
+          (*):                OK (0.57s)
               ✓ (*) passed 100 tests.
-          quot:               OK (0.22s)
+          quot:               OK (0.62s)
               ✓ quot passed 100 tests.
-          rem:                OK (0.18s)
+          rem:                OK (0.58s)
               ✓ rem passed 100 tests.
-          quotRem:            OK (0.19s)
+          quotRem:            OK (0.72s)
               ✓ quotRem passed 100 tests.
-          div:                OK (0.19s)
+          div:                OK (0.57s)
               ✓ div passed 100 tests.
-          mod:                OK (0.19s)
+          mod:                OK (0.55s)
               ✓ mod passed 100 tests.
-          divMod:             OK (0.19s)
+          divMod:             OK (0.63s)
               ✓ divMod passed 100 tests.
-          (.&.):              OK (0.16s)
+          (.&.):              OK (0.62s)
               ✓ (.&.) passed 100 tests.
-          (.|.):              OK (0.16s)
+          (.|.):              OK (0.56s)
               ✓ (.|.) passed 100 tests.
-          xor:                OK (0.17s)
+          xor:                OK (0.55s)
               ✓ xor passed 100 tests.
-          shift:              OK (0.15s)
+          shift:              OK (0.52s)
               ✓ shift passed 100 tests.
-          shiftL:             OK (0.15s)
+          shiftL:             OK (0.62s)
               ✓ shiftL passed 100 tests.
-          shiftR:             OK (0.16s)
+          shiftR:             OK (0.45s)
               ✓ shiftR passed 100 tests.
-          rotate:             OK (0.16s)
+          rotate:             OK (0.45s)
               ✓ rotate passed 100 tests.
-          rotateL:            OK (0.16s)
+          rotateL:            OK (0.45s)
               ✓ rotateL passed 100 tests.
-          rotateR:            OK (0.16s)
+          rotateR:            OK (0.43s)
               ✓ rotateR passed 100 tests.
-          (<):                OK (0.15s)
+          (<):                OK (0.49s)
               ✓ (<) passed 100 tests.
-          (>):                OK (0.16s)
+          (>):                OK (0.46s)
               ✓ (>) passed 100 tests.
-          (<=):               OK (0.17s)
+          (<=):               OK (0.44s)
               ✓ (<=) passed 100 tests.
-          (>=):               OK (0.20s)
+          (>=):               OK (0.44s)
               ✓ (>=) passed 100 tests.
-          (==):               OK (0.16s)
+          (==):               OK (0.45s)
               ✓ (==) passed 100 tests.
-          (/=):               OK (0.18s)
+          (/=):               OK (0.64s)
               ✓ (/=) passed 100 tests.
-          min:                OK (0.17s)
+          min:                OK (0.55s)
               ✓ min passed 100 tests.
-          max:                OK (0.16s)
+          max:                OK (0.57s)
               ✓ max passed 100 tests.
         DIM2
-          (+):                OK (0.31s)
+          (+):                OK (1.03s)
               ✓ (+) passed 100 tests.
-          (-):                OK (0.29s)
+          (-):                OK (0.96s)
               ✓ (-) passed 100 tests.
-          (*):                OK (0.33s)
+          (*):                OK (0.97s)
               ✓ (*) passed 100 tests.
-          quot:               OK (0.40s)
+          quot:               OK (1.15s)
               ✓ quot passed 100 tests.
-          rem:                OK (0.40s)
+          rem:                OK (1.00s)
               ✓ rem passed 100 tests.
-          quotRem:            OK (0.43s)
+          quotRem:            OK (0.96s)
               ✓ quotRem passed 100 tests.
-          div:                OK (0.36s)
+          div:                OK (0.80s)
               ✓ div passed 100 tests.
-          mod:                OK (0.45s)
+          mod:                OK (0.92s)
               ✓ mod passed 100 tests.
-          divMod:             OK (0.41s)
+          divMod:             OK (0.91s)
               ✓ divMod passed 100 tests.
-          (.&.):              OK (0.40s)
+          (.&.):              OK (1.19s)
               ✓ (.&.) passed 100 tests.
-          (.|.):              OK (0.32s)
+          (.|.):              OK (1.39s)
               ✓ (.|.) passed 100 tests.
-          xor:                OK (0.29s)
+          xor:                OK (1.33s)
               ✓ xor passed 100 tests.
-          shift:              OK (0.28s)
+          shift:              OK (1.36s)
               ✓ shift passed 100 tests.
-          shiftL:             OK (0.31s)
+          shiftL:             OK (1.20s)
               ✓ shiftL passed 100 tests.
-          shiftR:             OK (0.26s)
+          shiftR:             OK (1.30s)
               ✓ shiftR passed 100 tests.
-          rotate:             OK (0.27s)
+          rotate:             OK (1.58s)
               ✓ rotate passed 100 tests.
-          rotateL:            OK (0.31s)
+          rotateL:            OK (1.31s)
               ✓ rotateL passed 100 tests.
-          rotateR:            OK (0.29s)
+          rotateR:            OK (1.44s)
               ✓ rotateR passed 100 tests.
-          (<):                OK (0.33s)
+          (<):                OK (1.41s)
               ✓ (<) passed 100 tests.
-          (>):                OK (0.39s)
+          (>):                OK (1.39s)
               ✓ (>) passed 100 tests.
-          (<=):               OK (0.28s)
+          (<=):               OK (1.49s)
               ✓ (<=) passed 100 tests.
-          (>=):               OK (0.30s)
+          (>=):               OK (0.94s)
               ✓ (>=) passed 100 tests.
-          (==):               OK (0.36s)
+          (==):               OK (0.92s)
               ✓ (==) passed 100 tests.
-          (/=):               OK (0.32s)
+          (/=):               OK (0.90s)
               ✓ (/=) passed 100 tests.
-          min:                OK (0.37s)
+          min:                OK (0.90s)
               ✓ min passed 100 tests.
-          max:                OK (0.31s)
+          max:                OK (0.85s)
               ✓ max passed 100 tests.
       Double
         DIM0
-          (+):                OK (0.05s)
+          (+):                OK (0.07s)
               ✓ (+) passed 100 tests.
-          (-):                OK (0.05s)
+          (-):                OK (0.04s)
               ✓ (-) passed 100 tests.
-          (*):                OK (0.05s)
+          (*):                OK (0.04s)
               ✓ (*) passed 100 tests.
-          (/):                OK (0.06s)
+          (/):                OK (0.04s)
               ✓ (/) passed 100 tests.
-          (**):               OK (0.27s)
+          (**):               OK (0.04s)
               ✓ (**) passed 100 tests.
-          atan2:              OK (0.24s)
+          atan2:              OK (0.04s)
               ✓ atan2 passed 100 tests.
-          logBase:            OK (0.26s)
+          logBase:            OK (0.03s)
               ✓ logBase passed 100 tests.
-          (<):                OK (0.05s)
+          (<):                OK (0.04s)
               ✓ (<) passed 100 tests.
-          (>):                OK (0.05s)
+          (>):                OK (0.04s)
               ✓ (>) passed 100 tests.
-          (<=):               OK (0.06s)
+          (<=):               OK (0.04s)
               ✓ (<=) passed 100 tests.
-          (>=):               OK (0.06s)
+          (>=):               OK (0.04s)
               ✓ (>=) passed 100 tests.
-          (==):               OK (0.06s)
+          (==):               OK (0.04s)
               ✓ (==) passed 100 tests.
-          (/=):               OK (0.05s)
+          (/=):               OK (0.04s)
               ✓ (/=) passed 100 tests.
-          min:                OK (0.26s)
+          min:                OK (0.05s)
               ✓ min passed 100 tests.
-          max:                OK (0.26s)
+          max:                OK (0.03s)
               ✓ max passed 100 tests.
         DIM1
-          (+):                OK (0.24s)
+          (+):                OK (0.64s)
               ✓ (+) passed 100 tests.
-          (-):                OK (0.24s)
+          (-):                OK (0.76s)
               ✓ (-) passed 100 tests.
-          (*):                OK (0.25s)
+          (*):                OK (0.79s)
               ✓ (*) passed 100 tests.
-          (/):                OK (0.27s)
+          (/):                OK (0.70s)
               ✓ (/) passed 100 tests.
-          (**):               OK (0.49s)
-              ✓ (**) passed 100 tests.
-          atan2:              OK (0.45s)
-              ✓ atan2 passed 100 tests.
-          logBase:            OK (0.46s)
-              ✓ logBase passed 100 tests.
-          (<):                OK (0.23s)
-              ✓ (<) passed 100 tests.
-          (>):                OK (0.25s)
-              ✓ (>) passed 100 tests.
-          (<=):               OK (0.24s)
-              ✓ (<=) passed 100 tests.
-          (>=):               OK (0.24s)
-              ✓ (>=) passed 100 tests.
-          (==):               OK (0.25s)
-              ✓ (==) passed 100 tests.
-          (/=):               OK (0.22s)
-              ✓ (/=) passed 100 tests.
-          min:                OK (0.45s)
-              ✓ min passed 100 tests.
-          max:                OK (0.44s)
-              ✓ max passed 100 tests.
-        DIM2
-          (+):                OK (0.54s)
-              ✓ (+) passed 100 tests.
-          (-):                OK (0.47s)
-              ✓ (-) passed 100 tests.
-          (*):                OK (0.55s)
-              ✓ (*) passed 100 tests.
-          (/):                OK (0.62s)
-              ✓ (/) passed 100 tests.
-          (**):               OK (0.75s)
+          (**):               OK (0.56s)
               ✓ (**) passed 100 tests.
           atan2:              OK (0.66s)
               ✓ atan2 passed 100 tests.
-          logBase:            OK (0.83s)
+          logBase:            OK (0.64s)
               ✓ logBase passed 100 tests.
-          (<):                OK (0.39s)
+          (<):                OK (0.60s)
               ✓ (<) passed 100 tests.
-          (>):                OK (0.43s)
+          (>):                OK (0.89s)
               ✓ (>) passed 100 tests.
-          (<=):               OK (0.49s)
+          (<=):               OK (0.76s)
               ✓ (<=) passed 100 tests.
-          (>=):               OK (0.45s)
+          (>=):               OK (0.68s)
               ✓ (>=) passed 100 tests.
-          (==):               OK (0.47s)
+          (==):               OK (0.74s)
               ✓ (==) passed 100 tests.
-          (/=):               OK (0.49s)
+          (/=):               OK (0.63s)
               ✓ (/=) passed 100 tests.
-          min:                OK (0.66s)
+          min:                OK (0.60s)
               ✓ min passed 100 tests.
-          max:                OK (0.67s)
+          max:                OK (0.72s)
+              ✓ max passed 100 tests.
+        DIM2
+          (+):                OK (1.15s)
+              ✓ (+) passed 100 tests.
+          (-):                OK (1.07s)
+              ✓ (-) passed 100 tests.
+          (*):                OK (1.35s)
+              ✓ (*) passed 100 tests.
+          (/):                OK (1.30s)
+              ✓ (/) passed 100 tests.
+          (**):               OK (1.35s)
+              ✓ (**) passed 100 tests.
+          atan2:              OK (1.15s)
+              ✓ atan2 passed 100 tests.
+          logBase:            OK (1.36s)
+              ✓ logBase passed 100 tests.
+          (<):                OK (1.36s)
+              ✓ (<) passed 100 tests.
+          (>):                OK (1.06s)
+              ✓ (>) passed 100 tests.
+          (<=):               OK (1.16s)
+              ✓ (<=) passed 100 tests.
+          (>=):               OK (1.27s)
+              ✓ (>=) passed 100 tests.
+          (==):               OK (1.06s)
+              ✓ (==) passed 100 tests.
+          (/=):               OK (1.11s)
+              ✓ (/=) passed 100 tests.
+          min:                OK (1.12s)
+              ✓ min passed 100 tests.
+          max:                OK (1.06s)
               ✓ max passed 100 tests.
     simd
       Int64
         extract
-          V2:                 OK (0.26s)
+          V2:                 OK (0.43s)
               ✓ V2 passed 100 tests.
-          V3:                 OK (0.33s)
+          V3:                 OK (0.65s)
               ✓ V3 passed 100 tests.
-          V4:                 OK (0.48s)
+          V4:                 OK (0.81s)
               ✓ V4 passed 100 tests.
         inject
-          V2:                 OK (0.17s)
+          V2:                 OK (0.44s)
               ✓ V2 passed 100 tests.
-          V3:                 OK (0.23s)
+          V3:                 OK (0.73s)
               ✓ V3 passed 100 tests.
-          V4:                 OK (0.32s)
+          V4:                 OK (0.89s)
               ✓ V4 passed 100 tests.
       Double
         extract
-          V2:                 OK (0.28s)
+          V2:                 OK (0.54s)
               ✓ V2 passed 100 tests.
-          V3:                 OK (0.46s)
+          V3:                 OK (0.73s)
               ✓ V3 passed 100 tests.
-          V4:                 OK (0.55s)
+          V4:                 OK (0.90s)
               ✓ V4 passed 100 tests.
         inject
-          V2:                 OK (0.26s)
+          V2:                 OK (0.57s)
               ✓ V2 passed 100 tests.
-          V3:                 OK (0.31s)
+          V3:                 OK (0.78s)
               ✓ V3 passed 100 tests.
-          V4:                 OK (0.43s)
+          V4:                 OK (1.12s)
               ✓ V4 passed 100 tests.
     fold
       Int64
         DIM1
-          sum:                OK (0.19s)
-              ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.07s)
-              ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.41s)
-              ✓ non-commutative passed 100 tests.
-          minimum:            OK (0.18s)
-              ✓ minimum passed 100 tests.
-          maximum:            OK (0.19s)
-              ✓ maximum passed 100 tests.
-        DIM2
-          sum:                OK (0.24s)
-              ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.16s)
-              ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.36s)
-              ✓ non-commutative passed 100 tests.
-          minimum:            OK (0.24s)
-              ✓ minimum passed 100 tests.
-          maximum:            OK (0.23s)
-              ✓ maximum passed 100 tests.
-        DIM3
-          sum:                OK (0.32s)
-              ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.33s)
-              ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.49s)
-              ✓ non-commutative passed 100 tests.
-          minimum:            OK (0.45s)
-              ✓ minimum passed 100 tests.
-          maximum:            OK (0.45s)
-              ✓ maximum passed 100 tests.
-      Double
-        DIM1
-          sum:                OK (0.22s)
-              ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.09s)
-              ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.67s)
-              ✓ non-commutative passed 100 tests.
-          minimum:            OK (0.43s)
-              ✓ minimum passed 100 tests.
-          maximum:            OK (0.41s)
-              ✓ maximum passed 100 tests.
-        DIM2
-          sum:                OK (0.29s)
-              ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.18s)
-              ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.71s)
-              ✓ non-commutative passed 100 tests.
-          minimum:            OK (0.51s)
-              ✓ minimum passed 100 tests.
-          maximum:            OK (0.49s)
-              ✓ maximum passed 100 tests.
-        DIM3
-          sum:                OK (0.50s)
-              ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.50s)
-              ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.94s)
-              ✓ non-commutative passed 100 tests.
-          minimum:            OK (0.73s)
-              ✓ minimum passed 100 tests.
-          maximum:            OK (0.68s)
-              ✓ maximum passed 100 tests.
-    foldSeg
-      Int64
-        DIM1
-          sum:                OK (0.42s)
-              ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.22s)
-              ✓ non-neutral sum passed 100 tests.
-          minimum:            OK (0.32s)
-              ✓ minimum passed 100 tests.
-          maximum:            OK (0.36s)
-              ✓ maximum passed 100 tests.
-        DIM2
-          sum:                OK (2.57s)
-              ✓ sum passed 100 tests.
-          non-neutral sum:    OK (2.46s)
-              ✓ non-neutral sum passed 100 tests.
-          minimum:            OK (2.82s)
-              ✓ minimum passed 100 tests.
-          maximum:            OK (2.18s)
-              ✓ maximum passed 100 tests.
-        DIM3
-          sum:                OK (3.46s)
-              ✓ sum passed 100 tests.
-          non-neutral sum:    OK (3.42s)
-              ✓ non-neutral sum passed 100 tests.
-          minimum:            OK (3.65s)
-              ✓ minimum passed 100 tests.
-          maximum:            OK (4.86s)
-              ✓ maximum passed 100 tests.
-      Double
-        DIM1
-          sum:                OK (0.39s)
-              ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.27s)
-              ✓ non-neutral sum passed 100 tests.
-          minimum:            OK (0.64s)
-              ✓ minimum passed 100 tests.
-          maximum:            OK (0.61s)
-              ✓ maximum passed 100 tests.
-        DIM2
-          sum:                OK (3.02s)
-              ✓ sum passed 100 tests.
-          non-neutral sum:    OK (3.06s)
-              ✓ non-neutral sum passed 100 tests.
-          minimum:            OK (2.82s)
-              ✓ minimum passed 100 tests.
-          maximum:            OK (2.84s)
-              ✓ maximum passed 100 tests.
-        DIM3
-          sum:                OK (3.61s)
-              ✓ sum passed 100 tests.
-          non-neutral sum:    OK (2.88s)
-              ✓ non-neutral sum passed 100 tests.
-          minimum:            OK (4.52s)
-              ✓ minimum passed 100 tests.
-          maximum:            OK (6.81s)
-              ✓ maximum passed 100 tests.
-    backpermute
-      Int64
-        DIM1
-          take:               OK (0.11s)
-              ✓ take passed 100 tests.
-          drop:               OK (0.11s)
-              ✓ drop passed 100 tests.
-          gather->DIM1:       OK (0.16s)
-              ✓ gather->DIM1 passed 100 tests.
-          gather->DIM2:       OK (0.27s)
-              ✓ gather->DIM2 passed 100 tests.
-          gather->DIM3:       OK (0.53s)
-              ✓ gather->DIM3 passed 100 tests.
-        DIM2
-          take:               OK (0.22s)
-              ✓ take passed 100 tests.
-          drop:               OK (0.17s)
-              ✓ drop passed 100 tests.
-          gather->DIM1:       OK (0.28s)
-              ✓ gather->DIM1 passed 100 tests.
-          gather->DIM2:       OK (0.36s)
-              ✓ gather->DIM2 passed 100 tests.
-          gather->DIM3:       OK (0.61s)
-              ✓ gather->DIM3 passed 100 tests.
-        DIM3
-          take:               OK (0.66s)
-              ✓ take passed 100 tests.
-          drop:               OK (0.48s)
-              ✓ drop passed 100 tests.
-          gather->DIM1:       OK (0.44s)
-              ✓ gather->DIM1 passed 100 tests.
-          gather->DIM2:       OK (0.49s)
-              ✓ gather->DIM2 passed 100 tests.
-          gather->DIM3:       OK (0.70s)
-              ✓ gather->DIM3 passed 100 tests.
-      Double
-        DIM1
-          take:               OK (0.14s)
-              ✓ take passed 100 tests.
-          drop:               OK (0.14s)
-              ✓ drop passed 100 tests.
-          gather->DIM1:       OK (0.18s)
-              ✓ gather->DIM1 passed 100 tests.
-          gather->DIM2:       OK (0.30s)
-              ✓ gather->DIM2 passed 100 tests.
-          gather->DIM3:       OK (0.61s)
-              ✓ gather->DIM3 passed 100 tests.
-        DIM2
-          take:               OK (0.25s)
-              ✓ take passed 100 tests.
-          drop:               OK (0.26s)
-              ✓ drop passed 100 tests.
-          gather->DIM1:       OK (0.31s)
-              ✓ gather->DIM1 passed 100 tests.
-          gather->DIM2:       OK (0.46s)
-              ✓ gather->DIM2 passed 100 tests.
-          gather->DIM3:       OK (0.55s)
-              ✓ gather->DIM3 passed 100 tests.
-        DIM3
-          take:               OK (0.56s)
-              ✓ take passed 100 tests.
-          drop:               OK (0.51s)
-              ✓ drop passed 100 tests.
-          gather->DIM1:       OK (0.66s)
-              ✓ gather->DIM1 passed 100 tests.
-          gather->DIM2:       OK (0.49s)
-              ✓ gather->DIM2 passed 100 tests.
-          gather->DIM3:       OK (0.84s)
-              ✓ gather->DIM3 passed 100 tests.
-    permute
-      Int64
-        DIM1
-          scatter->DIM1:      OK (0.27s)
-              ✓ scatter->DIM1 passed 100 tests.
-          scatter->DIM2:      OK (0.31s)
-              ✓ scatter->DIM2 passed 100 tests.
-          scatter->DIM3:      OK (0.63s)
-              ✓ scatter->DIM3 passed 100 tests.
-          accumulate->DIM1:   OK (0.20s)
-              ✓ accumulate->DIM1 passed 100 tests.
-          accumulate->DIM2:   OK (0.21s)
-              ✓ accumulate->DIM2 passed 100 tests.
-          accumulate->DIM3:   OK (0.21s)
-              ✓ accumulate->DIM3 passed 100 tests.
-        DIM2
-          scatter->DIM1:      OK (0.41s)
-              ✓ scatter->DIM1 passed 100 tests.
-          scatter->DIM2:      OK (0.60s)
-              ✓ scatter->DIM2 passed 100 tests.
-          scatter->DIM3:      OK (0.81s)
-              ✓ scatter->DIM3 passed 100 tests.
-          accumulate->DIM1:   OK (0.41s)
-              ✓ accumulate->DIM1 passed 100 tests.
-          accumulate->DIM2:   OK (0.38s)
-              ✓ accumulate->DIM2 passed 100 tests.
-          accumulate->DIM3:   OK (0.42s)
-              ✓ accumulate->DIM3 passed 100 tests.
-        DIM3
-          scatter->DIM1:      OK (1.12s)
-              ✓ scatter->DIM1 passed 100 tests.
-          scatter->DIM2:      OK (0.91s)
-              ✓ scatter->DIM2 passed 100 tests.
-          scatter->DIM3:      OK (1.45s)
-              ✓ scatter->DIM3 passed 100 tests.
-          accumulate->DIM1:   OK (0.65s)
-              ✓ accumulate->DIM1 passed 100 tests.
-          accumulate->DIM2:   OK (1.02s)
-              ✓ accumulate->DIM2 passed 100 tests.
-          accumulate->DIM3:   OK (0.72s)
-              ✓ accumulate->DIM3 passed 100 tests.
-      Double
-        DIM1
-          scatter->DIM1:      OK (0.34s)
-              ✓ scatter->DIM1 passed 100 tests.
-          scatter->DIM2:      OK (0.49s)
-              ✓ scatter->DIM2 passed 100 tests.
-          scatter->DIM3:      OK (0.71s)
-              ✓ scatter->DIM3 passed 100 tests.
-          accumulate->DIM1:   OK (0.22s)
-              ✓ accumulate->DIM1 passed 100 tests.
-          accumulate->DIM2:   OK (0.23s)
-              ✓ accumulate->DIM2 passed 100 tests.
-          accumulate->DIM3:   OK (0.27s)
-              ✓ accumulate->DIM3 passed 100 tests.
-        DIM2
-          scatter->DIM1:      OK (0.54s)
-              ✓ scatter->DIM1 passed 100 tests.
-          scatter->DIM2:      OK (0.71s)
-              ✓ scatter->DIM2 passed 100 tests.
-          scatter->DIM3:      OK (0.95s)
-              ✓ scatter->DIM3 passed 100 tests.
-          accumulate->DIM1:   OK (0.45s)
-              ✓ accumulate->DIM1 passed 100 tests.
-          accumulate->DIM2:   OK (0.42s)
-              ✓ accumulate->DIM2 passed 100 tests.
-          accumulate->DIM3:   OK (0.56s)
-              ✓ accumulate->DIM3 passed 100 tests.
-        DIM3
-          scatter->DIM1:      OK (1.01s)
-              ✓ scatter->DIM1 passed 100 tests.
-          scatter->DIM2:      OK (0.98s)
-              ✓ scatter->DIM2 passed 100 tests.
-          scatter->DIM3:      OK (1.42s)
-              ✓ scatter->DIM3 passed 100 tests.
-          accumulate->DIM1:   OK (0.72s)
-              ✓ accumulate->DIM1 passed 100 tests.
-          accumulate->DIM2:   OK (1.00s)
-              ✓ accumulate->DIM2 passed 100 tests.
-          accumulate->DIM3:   OK (0.87s)
-              ✓ accumulate->DIM3 passed 100 tests.
-    scanl
-      Int64
-        DIM1
-          sum:                OK (0.16s)
-              ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.07s)
-              ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.19s)
-              ✓ non-commutative passed 100 tests.
-        DIM2
-          sum:                OK (0.20s)
-              ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.17s)
-              ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.15s)
-              ✓ non-commutative passed 100 tests.
-        DIM3
-          sum:                OK (0.54s)
-              ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.32s)
-              ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.19s)
-              ✓ non-commutative passed 100 tests.
-      Double
-        DIM1
-          sum:                OK (0.17s)
-              ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.10s)
-              ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.20s)
-              ✓ non-commutative passed 100 tests.
-        DIM2
           sum:                OK (0.21s)
               ✓ sum passed 100 tests.
           non-neutral sum:    OK (0.21s)
               ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.15s)
+          non-commutative:    OK (0.20s)
               ✓ non-commutative passed 100 tests.
-        DIM3
-          sum:                OK (0.45s)
+          minimum:            OK (0.20s)
+              ✓ minimum passed 100 tests.
+          maximum:            OK (0.18s)
+              ✓ maximum passed 100 tests.
+        DIM2
+          sum:                OK (0.43s)
               ✓ sum passed 100 tests.
           non-neutral sum:    OK (0.35s)
               ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.18s)
+          non-commutative:    OK (0.39s)
+              ✓ non-commutative passed 100 tests.
+          minimum:            OK (0.35s)
+              ✓ minimum passed 100 tests.
+          maximum:            OK (0.45s)
+              ✓ maximum passed 100 tests.
+        DIM3
+          sum:                OK (1.23s)
+              ✓ sum passed 100 tests.
+          non-neutral sum:    OK (0.68s)
+              ✓ non-neutral sum passed 100 tests.
+          non-commutative:    OK (0.95s)
+              ✓ non-commutative passed 100 tests.
+          minimum:            OK (0.78s)
+              ✓ minimum passed 100 tests.
+          maximum:            OK (0.81s)
+              ✓ maximum passed 100 tests.
+      Double
+        DIM1
+          sum:                OK (0.27s)
+              ✓ sum passed 100 tests.
+          non-neutral sum:    OK (0.26s)
+              ✓ non-neutral sum passed 100 tests.
+          non-commutative:    OK (0.27s)
+              ✓ non-commutative passed 100 tests.
+          minimum:            OK (0.26s)
+              ✓ minimum passed 100 tests.
+          maximum:            OK (0.24s)
+              ✓ maximum passed 100 tests.
+        DIM2
+          sum:                OK (0.57s)
+              ✓ sum passed 100 tests.
+          non-neutral sum:    OK (0.48s)
+              ✓ non-neutral sum passed 100 tests.
+          non-commutative:    OK (0.46s)
+              ✓ non-commutative passed 100 tests.
+          minimum:            OK (0.57s)
+              ✓ minimum passed 100 tests.
+          maximum:            OK (0.47s)
+              ✓ maximum passed 100 tests.
+        DIM3
+          sum:                OK (0.73s)
+              ✓ sum passed 100 tests.
+          non-neutral sum:    OK (0.93s)
+              ✓ non-neutral sum passed 100 tests.
+          non-commutative:    OK (1.01s)
+              ✓ non-commutative passed 100 tests.
+          minimum:            OK (0.96s)
+              ✓ minimum passed 100 tests.
+          maximum:            OK (0.73s)
+              ✓ maximum passed 100 tests.
+    foldSeg
+      Int64
+        DIM1
+          sum:                OK (0.57s)
+              ✓ sum passed 100 tests.
+          non-neutral sum:    OK (0.68s)
+              ✓ non-neutral sum passed 100 tests.
+          minimum:            OK (0.53s)
+              ✓ minimum passed 100 tests.
+          maximum:            OK (0.53s)
+              ✓ maximum passed 100 tests.
+        DIM2
+          sum:                OK (5.51s)
+              ✓ sum passed 100 tests.
+          non-neutral sum:    OK (4.91s)
+              ✓ non-neutral sum passed 100 tests.
+          minimum:            OK (4.93s)
+              ✓ minimum passed 100 tests.
+          maximum:            OK (4.05s)
+              ✓ maximum passed 100 tests.
+        DIM3
+          sum:                OK (6.97s)
+              ✓ sum passed 100 tests.
+          non-neutral sum:    OK (8.31s)
+              ✓ non-neutral sum passed 100 tests.
+          minimum:            OK (5.26s)
+              ✓ minimum passed 100 tests.
+          maximum:            OK (9.33s)
+              ✓ maximum passed 100 tests.
+      Double
+        DIM1
+          sum:                OK (0.71s)
+              ✓ sum passed 100 tests.
+          non-neutral sum:    OK (0.77s)
+              ✓ non-neutral sum passed 100 tests.
+          minimum:            OK (0.69s)
+              ✓ minimum passed 100 tests.
+          maximum:            OK (0.74s)
+              ✓ maximum passed 100 tests.
+        DIM2
+          sum:                OK (5.86s)
+              ✓ sum passed 100 tests.
+          non-neutral sum:    OK (5.07s)
+              ✓ non-neutral sum passed 100 tests.
+          minimum:            OK (4.85s)
+              ✓ minimum passed 100 tests.
+          maximum:            OK (7.06s)
+              ✓ maximum passed 100 tests.
+        DIM3
+          sum:                OK (9.12s)
+              ✓ sum passed 100 tests.
+          non-neutral sum:    OK (10.85s)
+              ✓ non-neutral sum passed 100 tests.
+          minimum:            OK (8.51s)
+              ✓ minimum passed 100 tests.
+          maximum:            OK (10.15s)
+              ✓ maximum passed 100 tests.
+    backpermute
+      Int64
+        DIM1
+          take:               OK (0.23s)
+              ✓ take passed 100 tests.
+          drop:               OK (0.26s)
+              ✓ drop passed 100 tests.
+          gather->DIM1:       OK (0.41s)
+              ✓ gather->DIM1 passed 100 tests.
+          gather->DIM2:       OK (0.52s)
+              ✓ gather->DIM2 passed 100 tests.
+          gather->DIM3:       OK (0.72s)
+              ✓ gather->DIM3 passed 100 tests.
+        DIM2
+          take:               OK (0.53s)
+              ✓ take passed 100 tests.
+          drop:               OK (0.52s)
+              ✓ drop passed 100 tests.
+          gather->DIM1:       OK (0.61s)
+              ✓ gather->DIM1 passed 100 tests.
+          gather->DIM2:       OK (0.77s)
+              ✓ gather->DIM2 passed 100 tests.
+          gather->DIM3:       OK (1.46s)
+              ✓ gather->DIM3 passed 100 tests.
+        DIM3
+          take:               OK (1.12s)
+              ✓ take passed 100 tests.
+          drop:               OK (0.75s)
+              ✓ drop passed 100 tests.
+          gather->DIM1:       OK (1.24s)
+              ✓ gather->DIM1 passed 100 tests.
+          gather->DIM2:       OK (1.72s)
+              ✓ gather->DIM2 passed 100 tests.
+          gather->DIM3:       OK (1.81s)
+              ✓ gather->DIM3 passed 100 tests.
+      Double
+        DIM1
+          take:               OK (0.29s)
+              ✓ take passed 100 tests.
+          drop:               OK (0.34s)
+              ✓ drop passed 100 tests.
+          gather->DIM1:       OK (0.42s)
+              ✓ gather->DIM1 passed 100 tests.
+          gather->DIM2:       OK (0.68s)
+              ✓ gather->DIM2 passed 100 tests.
+          gather->DIM3:       OK (1.01s)
+              ✓ gather->DIM3 passed 100 tests.
+        DIM2
+          take:               OK (0.51s)
+              ✓ take passed 100 tests.
+          drop:               OK (0.61s)
+              ✓ drop passed 100 tests.
+          gather->DIM1:       OK (0.58s)
+              ✓ gather->DIM1 passed 100 tests.
+          gather->DIM2:       OK (0.85s)
+              ✓ gather->DIM2 passed 100 tests.
+          gather->DIM3:       OK (1.36s)
+              ✓ gather->DIM3 passed 100 tests.
+        DIM3
+          take:               OK (0.99s)
+              ✓ take passed 100 tests.
+          drop:               OK (1.50s)
+              ✓ drop passed 100 tests.
+          gather->DIM1:       OK (0.89s)
+              ✓ gather->DIM1 passed 100 tests.
+          gather->DIM2:       OK (1.38s)
+              ✓ gather->DIM2 passed 100 tests.
+          gather->DIM3:       OK (1.46s)
+              ✓ gather->DIM3 passed 100 tests.
+    permute
+      Int64
+        DIM1
+          scatter->DIM1:      OK (0.67s)
+              ✓ scatter->DIM1 passed 100 tests.
+          scatter->DIM2:      OK (0.92s)
+              ✓ scatter->DIM2 passed 100 tests.
+          scatter->DIM3:      OK (1.56s)
+              ✓ scatter->DIM3 passed 100 tests.
+          accumulate->DIM1:   OK (0.55s)
+              ✓ accumulate->DIM1 passed 100 tests.
+          accumulate->DIM2:   OK (0.52s)
+              ✓ accumulate->DIM2 passed 100 tests.
+          accumulate->DIM3:   OK (0.59s)
+              ✓ accumulate->DIM3 passed 100 tests.
+        DIM2
+          scatter->DIM1:      OK (1.02s)
+              ✓ scatter->DIM1 passed 100 tests.
+          scatter->DIM2:      OK (1.17s)
+              ✓ scatter->DIM2 passed 100 tests.
+          scatter->DIM3:      OK (2.32s)
+              ✓ scatter->DIM3 passed 100 tests.
+          accumulate->DIM1:   OK (0.97s)
+              ✓ accumulate->DIM1 passed 100 tests.
+          accumulate->DIM2:   OK (0.84s)
+              ✓ accumulate->DIM2 passed 100 tests.
+          accumulate->DIM3:   OK (0.85s)
+              ✓ accumulate->DIM3 passed 100 tests.
+        DIM3
+          scatter->DIM1:      OK (2.07s)
+              ✓ scatter->DIM1 passed 100 tests.
+          scatter->DIM2:      OK (1.30s)
+              ✓ scatter->DIM2 passed 100 tests.
+          scatter->DIM3:      OK (2.71s)
+              ✓ scatter->DIM3 passed 100 tests.
+          accumulate->DIM1:   OK (1.55s)
+              ✓ accumulate->DIM1 passed 100 tests.
+          accumulate->DIM2:   OK (1.72s)
+              ✓ accumulate->DIM2 passed 100 tests.
+          accumulate->DIM3:   OK (2.44s)
+              ✓ accumulate->DIM3 passed 100 tests.
+      Double
+        DIM1
+          scatter->DIM1:      OK (0.79s)
+              ✓ scatter->DIM1 passed 100 tests.
+          scatter->DIM2:      OK (1.13s)
+              ✓ scatter->DIM2 passed 100 tests.
+          scatter->DIM3:      OK (1.53s)
+              ✓ scatter->DIM3 passed 100 tests.
+          accumulate->DIM1:   OK (0.56s)
+              ✓ accumulate->DIM1 passed 100 tests.
+          accumulate->DIM2:   OK (0.58s)
+              ✓ accumulate->DIM2 passed 100 tests.
+          accumulate->DIM3:   OK (0.70s)
+              ✓ accumulate->DIM3 passed 100 tests.
+        DIM2
+          scatter->DIM1:      OK (1.18s)
+              ✓ scatter->DIM1 passed 100 tests.
+          scatter->DIM2:      OK (1.45s)
+              ✓ scatter->DIM2 passed 100 tests.
+          scatter->DIM3:      OK (2.13s)
+              ✓ scatter->DIM3 passed 100 tests.
+          accumulate->DIM1:   OK (0.95s)
+              ✓ accumulate->DIM1 passed 100 tests.
+          accumulate->DIM2:   OK (0.91s)
+              ✓ accumulate->DIM2 passed 100 tests.
+          accumulate->DIM3:   OK (1.17s)
+              ✓ accumulate->DIM3 passed 100 tests.
+        DIM3
+          scatter->DIM1:      OK (2.21s)
+              ✓ scatter->DIM1 passed 100 tests.
+          scatter->DIM2:      OK (2.65s)
+              ✓ scatter->DIM2 passed 100 tests.
+          scatter->DIM3:      OK (2.63s)
+              ✓ scatter->DIM3 passed 100 tests.
+          accumulate->DIM1:   OK (1.63s)
+              ✓ accumulate->DIM1 passed 100 tests.
+          accumulate->DIM2:   OK (1.56s)
+              ✓ accumulate->DIM2 passed 100 tests.
+          accumulate->DIM3:   OK (2.21s)
+              ✓ accumulate->DIM3 passed 100 tests.
+    scanl
+      Int64
+        DIM1
+          sum:                OK (0.23s)
+              ✓ sum passed 100 tests.
+          non-neutral sum:    OK (0.24s)
+              ✓ non-neutral sum passed 100 tests.
+          non-commutative:    OK (0.11s)
+              ✓ non-commutative passed 100 tests.
+        DIM2
+          sum:                OK (0.53s)
+              ✓ sum passed 100 tests.
+          non-neutral sum:    OK (0.42s)
+              ✓ non-neutral sum passed 100 tests.
+          non-commutative:    OK (0.15s)
+              ✓ non-commutative passed 100 tests.
+        DIM3
+          sum:                OK (1.17s)
+              ✓ sum passed 100 tests.
+          non-neutral sum:    OK (0.63s)
+              ✓ non-neutral sum passed 100 tests.
+          non-commutative:    OK (0.22s)
+              ✓ non-commutative passed 100 tests.
+      Double
+        DIM1
+          sum:                OK (0.29s)
+              ✓ sum passed 100 tests.
+          non-neutral sum:    OK (0.29s)
+              ✓ non-neutral sum passed 100 tests.
+          non-commutative:    OK (0.11s)
+              ✓ non-commutative passed 100 tests.
+        DIM2
+          sum:                OK (0.57s)
+              ✓ sum passed 100 tests.
+          non-neutral sum:    OK (0.61s)
+              ✓ non-neutral sum passed 100 tests.
+          non-commutative:    OK (0.16s)
+              ✓ non-commutative passed 100 tests.
+        DIM3
+          sum:                OK (0.83s)
+              ✓ sum passed 100 tests.
+          non-neutral sum:    OK (0.74s)
+              ✓ non-neutral sum passed 100 tests.
+          non-commutative:    OK (0.31s)
               ✓ non-commutative passed 100 tests.
     scanl1
       Int64
         DIM1
-          sum:                OK (0.14s)
-              ✓ sum passed 100 tests.
-          non-commutative:    OK (0.18s)
-              ✓ non-commutative passed 100 tests.
-        DIM2
           sum:                OK (0.22s)
               ✓ sum passed 100 tests.
-          non-commutative:    OK (0.21s)
+          non-commutative:    OK (0.11s)
+              ✓ non-commutative passed 100 tests.
+        DIM2
+          sum:                OK (0.49s)
+              ✓ sum passed 100 tests.
+          non-commutative:    OK (0.20s)
               ✓ non-commutative passed 100 tests.
         DIM3
-          sum:                OK (0.39s)
+          sum:                OK (0.74s)
               ✓ sum passed 100 tests.
           non-commutative:    OK (0.28s)
               ✓ non-commutative passed 100 tests.
       Double
         DIM1
-          sum:                OK (0.18s)
+          sum:                OK (0.32s)
               ✓ sum passed 100 tests.
-          non-commutative:    OK (0.19s)
+          non-commutative:    OK (0.11s)
               ✓ non-commutative passed 100 tests.
         DIM2
-          sum:                OK (0.27s)
+          sum:                OK (0.56s)
               ✓ sum passed 100 tests.
-          non-commutative:    OK (0.22s)
+          non-commutative:    OK (0.17s)
               ✓ non-commutative passed 100 tests.
         DIM3
-          sum:                OK (0.65s)
+          sum:                OK (1.30s)
               ✓ sum passed 100 tests.
-          non-commutative:    OK (0.23s)
+          non-commutative:    OK (0.27s)
               ✓ non-commutative passed 100 tests.
     scanl'
       Int64
         DIM1
-          sum:                OK (0.17s)
+          sum:                OK (0.26s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.08s)
+          non-neutral sum:    OK (0.27s)
               ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.20s)
+          non-commutative:    OK (0.14s)
               ✓ non-commutative passed 100 tests.
         DIM2
-          sum:                OK (0.22s)
-              ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.13s)
-              ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.16s)
-              ✓ non-commutative passed 100 tests.
-        DIM3
           sum:                OK (0.48s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.37s)
+          non-neutral sum:    OK (0.56s)
               ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.25s)
+          non-commutative:    OK (0.22s)
+              ✓ non-commutative passed 100 tests.
+        DIM3
+          sum:                OK (0.63s)
+              ✓ sum passed 100 tests.
+          non-neutral sum:    OK (0.95s)
+              ✓ non-neutral sum passed 100 tests.
+          non-commutative:    OK (0.35s)
               ✓ non-commutative passed 100 tests.
       Double
         DIM1
-          sum:                OK (0.18s)
+          sum:                OK (0.27s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.11s)
+          non-neutral sum:    OK (0.30s)
               ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.21s)
+          non-commutative:    OK (0.15s)
               ✓ non-commutative passed 100 tests.
         DIM2
-          sum:                OK (0.21s)
+          sum:                OK (0.50s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.24s)
+          non-neutral sum:    OK (0.68s)
               ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.17s)
+          non-commutative:    OK (0.20s)
               ✓ non-commutative passed 100 tests.
         DIM3
-          sum:                OK (0.52s)
+          sum:                OK (0.82s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.36s)
+          non-neutral sum:    OK (0.72s)
               ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.21s)
+          non-commutative:    OK (0.38s)
               ✓ non-commutative passed 100 tests.
     scanr
       Int64
         DIM1
-          sum:                OK (0.16s)
+          sum:                OK (0.25s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.07s)
+          non-neutral sum:    OK (0.23s)
               ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.19s)
+          non-commutative:    OK (0.11s)
               ✓ non-commutative passed 100 tests.
         DIM2
-          sum:                OK (0.24s)
+          sum:                OK (0.51s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.12s)
+          non-neutral sum:    OK (0.47s)
               ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.15s)
+          non-commutative:    OK (0.17s)
               ✓ non-commutative passed 100 tests.
         DIM3
-          sum:                OK (0.35s)
+          sum:                OK (0.80s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.32s)
+          non-neutral sum:    OK (1.23s)
               ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.18s)
+          non-commutative:    OK (0.40s)
               ✓ non-commutative passed 100 tests.
       Double
         DIM1
-          sum:                OK (0.17s)
+          sum:                OK (0.36s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.10s)
+          non-neutral sum:    OK (0.37s)
               ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.19s)
+          non-commutative:    OK (0.16s)
               ✓ non-commutative passed 100 tests.
         DIM2
-          sum:                OK (0.31s)
+          sum:                OK (0.65s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.25s)
+          non-neutral sum:    OK (0.59s)
               ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.15s)
+          non-commutative:    OK (0.23s)
               ✓ non-commutative passed 100 tests.
         DIM3
-          sum:                OK (0.46s)
+          sum:                OK (0.93s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.46s)
+          non-neutral sum:    OK (0.91s)
               ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.17s)
+          non-commutative:    OK (0.44s)
               ✓ non-commutative passed 100 tests.
     scanr1
       Int64
         DIM1
-          sum:                OK (0.14s)
-              ✓ sum passed 100 tests.
-          non-commutative:    OK (0.19s)
-              ✓ non-commutative passed 100 tests.
-        DIM2
-          sum:                OK (0.23s)
-              ✓ sum passed 100 tests.
-          non-commutative:    OK (0.19s)
-              ✓ non-commutative passed 100 tests.
-        DIM3
-          sum:                OK (0.53s)
-              ✓ sum passed 100 tests.
-          non-commutative:    OK (0.23s)
-              ✓ non-commutative passed 100 tests.
-      Double
-        DIM1
-          sum:                OK (0.17s)
+          sum:                OK (0.28s)
               ✓ sum passed 100 tests.
           non-commutative:    OK (0.18s)
               ✓ non-commutative passed 100 tests.
         DIM2
-          sum:                OK (0.31s)
+          sum:                OK (0.54s)
               ✓ sum passed 100 tests.
-          non-commutative:    OK (0.21s)
+          non-commutative:    OK (0.23s)
               ✓ non-commutative passed 100 tests.
         DIM3
-          sum:                OK (0.71s)
+          sum:                OK (0.63s)
               ✓ sum passed 100 tests.
-          non-commutative:    OK (0.27s)
+          non-commutative:    OK (0.32s)
+              ✓ non-commutative passed 100 tests.
+      Double
+        DIM1
+          sum:                OK (0.32s)
+              ✓ sum passed 100 tests.
+          non-commutative:    OK (0.12s)
+              ✓ non-commutative passed 100 tests.
+        DIM2
+          sum:                OK (0.61s)
+              ✓ sum passed 100 tests.
+          non-commutative:    OK (0.20s)
+              ✓ non-commutative passed 100 tests.
+        DIM3
+          sum:                OK (1.12s)
+              ✓ sum passed 100 tests.
+          non-commutative:    OK (0.33s)
               ✓ non-commutative passed 100 tests.
     scanr'
       Int64
         DIM1
-          sum:                OK (0.15s)
+          sum:                OK (0.30s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.08s)
+          non-neutral sum:    OK (0.26s)
+              ✓ non-neutral sum passed 100 tests.
+          non-commutative:    OK (0.14s)
+              ✓ non-commutative passed 100 tests.
+        DIM2
+          sum:                OK (0.36s)
+              ✓ sum passed 100 tests.
+          non-neutral sum:    OK (0.52s)
               ✓ non-neutral sum passed 100 tests.
           non-commutative:    OK (0.20s)
               ✓ non-commutative passed 100 tests.
-        DIM2
-          sum:                OK (0.19s)
-              ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.18s)
-              ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.16s)
-              ✓ non-commutative passed 100 tests.
         DIM3
-          sum:                OK (0.42s)
+          sum:                OK (0.92s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.44s)
+          non-neutral sum:    OK (1.12s)
               ✓ non-neutral sum passed 100 tests.
           non-commutative:    OK (0.25s)
               ✓ non-commutative passed 100 tests.
       Double
         DIM1
-          sum:                OK (0.17s)
+          sum:                OK (0.32s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.11s)
+          non-neutral sum:    OK (0.28s)
               ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.20s)
+          non-commutative:    OK (0.13s)
               ✓ non-commutative passed 100 tests.
         DIM2
-          sum:                OK (0.26s)
+          sum:                OK (0.60s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.18s)
+          non-neutral sum:    OK (0.67s)
               ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.16s)
+          non-commutative:    OK (0.22s)
               ✓ non-commutative passed 100 tests.
         DIM3
-          sum:                OK (0.69s)
+          sum:                OK (1.23s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.33s)
+          non-neutral sum:    OK (1.01s)
               ✓ non-neutral sum passed 100 tests.
-          non-commutative:    OK (0.17s)
+          non-commutative:    OK (0.27s)
               ✓ non-commutative passed 100 tests.
     scanlSeg
       Int64
         DIM1
-          sum:                OK (0.84s)
+          sum:                OK (1.17s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.29s)
+          non-neutral sum:    OK (1.13s)
               ✓ non-neutral sum passed 100 tests.
         DIM2
-          sum:                OK (2.36s)
+          sum:                OK (6.34s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (2.06s)
+          non-neutral sum:    OK (5.60s)
               ✓ non-neutral sum passed 100 tests.
         DIM3
-          sum:                OK (3.76s)
+          sum:                OK (9.65s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (3.54s)
+          non-neutral sum:    OK (10.34s)
               ✓ non-neutral sum passed 100 tests.
       Double
         DIM1
-          sum:                OK (0.56s)
+          sum:                OK (1.27s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.35s)
+          non-neutral sum:    OK (1.24s)
               ✓ non-neutral sum passed 100 tests.
         DIM2
-          sum:                OK (3.18s)
+          sum:                OK (4.73s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (3.26s)
+          non-neutral sum:    OK (7.64s)
               ✓ non-neutral sum passed 100 tests.
         DIM3
-          sum:                OK (5.80s)
+          sum:                OK (9.87s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (2.95s)
+          non-neutral sum:    OK (13.92s)
               ✓ non-neutral sum passed 100 tests.
     scanl1Seg
       Int64
         DIM1
-          sum:                OK (0.37s)
+          sum:                OK (0.72s)
               ✓ sum passed 100 tests.
         DIM2
-          sum:                OK (2.94s)
+          sum:                OK (5.16s)
               ✓ sum passed 100 tests.
         DIM3
-          sum:                OK (4.11s)
+          sum:                OK (11.90s)
               ✓ sum passed 100 tests.
       Double
         DIM1
-          sum:                OK (0.44s)
+          sum:                OK (1.04s)
               ✓ sum passed 100 tests.
         DIM2
-          sum:                OK (3.03s)
+          sum:                OK (5.20s)
               ✓ sum passed 100 tests.
         DIM3
-          sum:                OK (4.47s)
+          sum:                OK (7.61s)
               ✓ sum passed 100 tests.
     scanl'Seg
       Int64
         DIM1
-          sum:                OK (0.63s)
+          sum:                OK (1.42s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.32s)
+          non-neutral sum:    OK (1.56s)
               ✓ non-neutral sum passed 100 tests.
         DIM2
-          sum:                OK (2.08s)
+          sum:                OK (5.27s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (2.23s)
+          non-neutral sum:    OK (4.78s)
               ✓ non-neutral sum passed 100 tests.
         DIM3
-          sum:                OK (5.60s)
+          sum:                OK (8.64s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (4.86s)
+          non-neutral sum:    OK (11.33s)
               ✓ non-neutral sum passed 100 tests.
       Double
         DIM1
-          sum:                OK (0.48s)
+          sum:                OK (1.49s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.46s)
+          non-neutral sum:    OK (1.44s)
               ✓ non-neutral sum passed 100 tests.
         DIM2
-          sum:                OK (2.97s)
+          sum:                OK (5.97s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (3.50s)
+          non-neutral sum:    OK (5.79s)
               ✓ non-neutral sum passed 100 tests.
         DIM3
-          sum:                OK (3.81s)
+          sum:                OK (7.00s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (6.45s)
+          non-neutral sum:    OK (10.23s)
               ✓ non-neutral sum passed 100 tests.
     scanrSeg
       Int64
         DIM1
-          sum:                OK (0.53s)
+          sum:                OK (1.21s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.27s)
+          non-neutral sum:    OK (1.16s)
               ✓ non-neutral sum passed 100 tests.
         DIM2
-          sum:                OK (2.42s)
+          sum:                OK (4.87s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (1.95s)
+          non-neutral sum:    OK (5.05s)
               ✓ non-neutral sum passed 100 tests.
         DIM3
-          sum:                OK (3.10s)
+          sum:                OK (9.81s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (3.13s)
+          non-neutral sum:    OK (10.50s)
               ✓ non-neutral sum passed 100 tests.
       Double
         DIM1
-          sum:                OK (0.52s)
+          sum:                OK (1.25s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.37s)
+          non-neutral sum:    OK (1.27s)
               ✓ non-neutral sum passed 100 tests.
         DIM2
-          sum:                OK (3.26s)
+          sum:                OK (6.79s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (2.43s)
+          non-neutral sum:    OK (5.08s)
               ✓ non-neutral sum passed 100 tests.
         DIM3
-          sum:                OK (4.35s)
+          sum:                OK (11.97s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (4.82s)
+          non-neutral sum:    OK (13.38s)
               ✓ non-neutral sum passed 100 tests.
     scanr1Seg
       Int64
         DIM1
-          sum:                OK (0.43s)
+          sum:                OK (0.81s)
               ✓ sum passed 100 tests.
         DIM2
-          sum:                OK (2.06s)
+          sum:                OK (5.73s)
               ✓ sum passed 100 tests.
         DIM3
-          sum:                OK (4.82s)
+          sum:                OK (11.78s)
               ✓ sum passed 100 tests.
       Double
         DIM1
-          sum:                OK (0.41s)
+          sum:                OK (0.92s)
               ✓ sum passed 100 tests.
         DIM2
-          sum:                OK (2.56s)
+          sum:                OK (5.57s)
               ✓ sum passed 100 tests.
         DIM3
-          sum:                OK (5.96s)
+          sum:                OK (13.66s)
               ✓ sum passed 100 tests.
     scanr'Seg
       Int64
         DIM1
-          sum:                OK (0.39s)
+          sum:                OK (1.55s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.37s)
+          non-neutral sum:    OK (1.75s)
               ✓ non-neutral sum passed 100 tests.
         DIM2
-          sum:                OK (2.22s)
+          sum:                OK (9.17s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (1.66s)
+          non-neutral sum:    OK (4.82s)
               ✓ non-neutral sum passed 100 tests.
         DIM3
-          sum:                OK (4.76s)
+          sum:                OK (12.78s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (4.14s)
+          non-neutral sum:    OK (8.96s)
               ✓ non-neutral sum passed 100 tests.
       Double
         DIM1
-          sum:                OK (0.47s)
+          sum:                OK (1.48s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (0.38s)
+          non-neutral sum:    OK (1.68s)
               ✓ non-neutral sum passed 100 tests.
         DIM2
-          sum:                OK (3.27s)
+          sum:                OK (5.90s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (2.50s)
+          non-neutral sum:    OK (7.88s)
               ✓ non-neutral sum passed 100 tests.
         DIM3
-          sum:                OK (5.58s)
+          sum:                OK (8.68s)
               ✓ sum passed 100 tests.
-          non-neutral sum:    OK (3.91s)
+          non-neutral sum:    OK (10.11s)
               ✓ non-neutral sum passed 100 tests.
     filter
       Int64
         DIM1
-          even:               OK (0.27s)
+          even:               OK (0.32s)
               ✓ even passed 100 tests.
         DIM2
-          even:               OK (0.31s)
+          even:               OK (0.59s)
               ✓ even passed 100 tests.
         DIM3
-          even:               OK (0.34s)
+          even:               OK (1.28s)
               ✓ even passed 100 tests.
       Double
         DIM1
-          positive:           OK (0.21s)
+          positive:           OK (0.33s)
               ✓ positive passed 100 tests.
         DIM2
-          positive:           OK (0.32s)
+          positive:           OK (0.69s)
               ✓ positive passed 100 tests.
         DIM3
-          positive:           OK (0.59s)
+          positive:           OK (0.97s)
               ✓ positive passed 100 tests.
     stencil
       Int64
         DIM1
-          stencil3:           OK (2.44s)
+          stencil3:           OK (0.57s)
               ✓ stencil3 passed 100 tests.
-          stencil5:           OK (3.53s)
+          stencil5:           OK (1.11s)
               ✓ stencil5 passed 100 tests.
-          stencil7:           OK (4.47s)
+          stencil7:           OK (1.87s)
               ✓ stencil7 passed 100 tests.
-          stencil9:           OK (4.99s)
+          stencil9:           OK (2.15s)
               ✓ stencil9 passed 100 tests.
         DIM2
-          stencil3x3:         OK (6.08s)
+          stencil3x3:         OK (8.31s)
               ✓ stencil3x3 passed 100 tests.
-          stencil5x5:         OK (9.19s)
+          stencil5x5:         OK (15.09s)
               ✓ stencil5x5 passed 100 tests.
-          stencil7x7:         OK (16.95s)
+          stencil7x7:         OK (34.13s)
               ✓ stencil7x7 passed 100 tests.
-          stencil9x9:         OK (21.14s)
+          stencil9x9:         OK (30.44s)
               ✓ stencil9x9 passed 100 tests.
         DIM3
-          stencil3x3x3:       OK (11.67s)
+          stencil3x3x3:       OK (21.66s)
               ✓ stencil3x3x3 passed 100 tests.
       Double
         DIM1
-          stencil3:           OK (1.91s)
+          stencil3:           OK (0.63s)
               ✓ stencil3 passed 100 tests.
-          stencil5:           OK (3.52s)
+          stencil5:           OK (1.04s)
               ✓ stencil5 passed 100 tests.
-          stencil7:           OK (4.44s)
+          stencil7:           OK (1.86s)
               ✓ stencil7 passed 100 tests.
-          stencil9:           OK (5.02s)
+          stencil9:           OK (2.19s)
               ✓ stencil9 passed 100 tests.
         DIM2
-          stencil3x3:         OK (6.32s)
+          stencil3x3:         OK (8.24s)
               ✓ stencil3x3 passed 100 tests.
-          stencil5x5:         OK (9.02s)
+          stencil5x5:         OK (13.24s)
               ✓ stencil5x5 passed 100 tests.
-          stencil7x7:         OK (17.11s)
+          stencil7x7:         OK (31.01s)
               ✓ stencil7x7 passed 100 tests.
-          stencil9x9:         OK (20.95s)
+          stencil9x9:         OK (27.52s)
               ✓ stencil9x9 passed 100 tests.
         DIM3
-          stencil3x3x3:       OK (12.28s)
+          stencil3x3x3:       OK (21.65s)
               ✓ stencil3x3x3 passed 100 tests.
   imaginary
     sasum
-      Int64:                  FAIL (0.07s)
-          ✗ Int64 failed at src/Data/Array/Accelerate/Test/NoFib/Imaginary/SASUM.hs:69:3
-            after 1 test.
-          
-            ━━━ Exception (ErrorCall) ━━━
-            
-            *** Internal error in package accelerate ***
-            *** Please submit a bug report at https://github.com/AccelerateHS/accelerate/issues
-            
-            ptxas - -o /home/dpvanbalen/.cache/accelerate/accelerate-llvm-1.3.0.0/accelerate-llvm-ptx-1.3.0.0/llvm-hs-9.0.1/nvptx64-nvidia-cuda/sm75/rel/morp980756cb624ff884f2b9542fa5be480339ff495af9f078d2dd44b2b53125c30d.sass -arch=sm_75 (exit 255)
-            ptxas fatal   : Unresolved extern function 'llabs'
-            
-            
-            CallStack (from HasCallStack):
-              internalError: Data.Array.Accelerate.LLVM.PTX.Compile:185:24
-              compileCUBIN: Data.Array.Accelerate.LLVM.PTX.Compile:123:20
-              compile: Data.Array.Accelerate.LLVM.PTX.Compile:88:22
-          
-            This failure can be reproduced by running:
-            > recheck (Size 0) (Seed 18027682917129045921 5050487354153386295) Int64
-          
-        Use '--hedgehog-replay "Size 0 Seed 18027682917129045921 5050487354153386295"' to reproduce.
-      Double:                 OK (2.16s)
+      Int64:                  OK (3.35s)
+          ✓ Int64 passed 100 tests.
+      Double:                 OK (3.40s)
           ✓ Double passed 100 tests.
     saxpy
-      Int64:                  OK (3.49s)
+      Int64:                  OK (6.82s)
           ✓ Int64 passed 100 tests.
-      Double:                 OK (4.04s)
+      Double:                 OK (8.40s)
           ✓ Double passed 100 tests.
     dot product
-      Int64:                  OK (3.29s)
+      Int64:                  OK (6.51s)
           ✓ Int64 passed 100 tests.
-      Double:                 OK (3.85s)
+      Double:                 OK (8.71s)
           ✓ Double passed 100 tests.
   spectral
     blackscholes
-      Double:                 OK (5.61s)
+      Double:                 OK (8.59s)
           ✓ Double passed 100 tests.
     smvm
-      Double:                 OK (2.13s)
+      Double:                 OK (3.27s)
           ✓ Double passed 100 tests.
     radixsort
       Int64
-        ascending:            OK (2.37s)
+        ascending:            OK (6.66s)
             ✓ ascending passed 100 tests.
-        descending:           OK (2.26s)
+        descending:           OK (6.78s)
             ✓ descending passed 100 tests.
-        key-value:            OK (2.72s)
+        key-value:            OK (7.18s)
             ✓ key-value passed 100 tests.
   issues
-    93:                       OK (0.04s)
-    102:                      OK (0.10s)
+    93:                       OK
+    102:                      OK
     114
-      A:                      OK (0.12s)
-      B:                      OK (0.08s)
-    119
-      A:                      OK (0.10s)
+      A:                      OK
       B:                      OK
-      C:                      OK (0.12s)
+    119
+      A:                      OK (0.01s)
+      B:                      OK
+      C:                      OK
       D:                      OK
-      E:                      OK (0.08s)
-      F:                      OK (0.28s)
-      G:                      OK (0.21s)
-      H:                      OK (0.22s)
-      I:                      OK (0.12s)
-      J:                      OK (0.30s)
-      K:                      OK (0.16s)
-    123:                      OK (0.12s)
-    137:                      FAIL
-      Exception: 
-      *** Internal error in package accelerate ***
-      *** Please submit a bug report at https://github.com/AccelerateHS/accelerate/issues
-      
-      ptxas - -o /home/dpvanbalen/.cache/accelerate/accelerate-llvm-1.3.0.0/accelerate-llvm-ptx-1.3.0.0/llvm-hs-9.0.1/nvptx64-nvidia-cuda/sm75/rel/morpb5348fc923d18497fac39eb2b86f305d0926b4cb37271dbac387984ee5f1bcd5.sass -arch=sm_75 (exit 255)
-      ptxas fatal   : Unresolved extern function 'llabs'
-      
-      
-      CallStack (from HasCallStack):
-        internalError: Data.Array.Accelerate.LLVM.PTX.Compile:185:24
-        compileCUBIN: Data.Array.Accelerate.LLVM.PTX.Compile:123:20
-        compile: Data.Array.Accelerate.LLVM.PTX.Compile:88:22
+      E:                      OK
+      F:                      OK
+      G:                      OK
+      H:                      OK (0.02s)
+      I:                      OK (0.01s)
+      J:                      OK (0.02s)
+      K:                      OK (0.02s)
+    123:                      OK
+    137:                      OK
     168
-      A:                      OK (0.04s)
-      B:                      OK (0.03s)
-      C:                      OK (0.04s)
+      A:                      OK
+      B:                      OK
+      C:                      OK
     184
-      A:                      OK (0.04s)
+      A:                      OK
       B:                      OK
       C:                      OK
     185
-      A:                      OK (0.04s)
+      A:                      OK
       B:                      OK
-      C:                      OK (0.04s)
+      C:                      OK
       D:                      OK
-      E:                      OK (0.04s)
-      F:                      OK (0.04s)
+      E:                      OK
+      F:                      OK
     187
-      A:                      OK (0.04s)
-      B:                      OK (0.03s)
+      A:                      OK
+      B:                      OK
     228
-      A:                      OK (0.20s)
-      B:                      OK (0.19s)
+      A:                      OK
+      B:                      OK
     255
-      0:                      OK (0.56s)
-      2:                      OK (0.39s)
-      4:                      OK
-      20:                     OK (0.02s)
-      100:                    OK (0.11s)
+      0:                      OK (0.46s)
+      2:                      OK (0.51s)
+      4:                      OK (0.05s)
+      20:                     OK (0.19s)
+      100:                    OK (1.05s)
     264
       Bool
-        not.not:              OK
+        not.not:              OK (0.02s)
             ✓ not.not passed 100 tests.
-        not(&&):              OK (0.06s)
+        not(&&):              OK (0.05s)
             ✓ not(&&) passed 100 tests.
         not(||):              OK (0.05s)
             ✓ not(||) passed 100 tests.
         not(not(&&)):         OK (0.05s)
             ✓ not(not(&&)) passed 100 tests.
-        not(not(||)):         OK (0.06s)
+        not(not(||)):         OK (0.05s)
             ✓ not(not(||)) passed 100 tests.
       Int64
-        neg.neg:              OK (0.06s)
+        neg.neg:              OK (0.20s)
             ✓ neg.neg passed 100 tests.
       Double
-        neg.neg:              OK (0.09s)
+        neg.neg:              OK (0.28s)
             ✓ neg.neg passed 100 tests.
     287
-      A:                      OK (0.18s)
-      B:                      OK (0.20s)
-      C:                      OK (0.23s)
-    288:                      OK (0.04s)
+      A:                      OK
+      B:                      OK
+      C:                      OK
+    288:                      OK
     362
-      A:                      OK (0.15s)
-      B:                      OK (0.17s)
+      A:                      OK
+      B:                      OK (0.01s)
     issue364
       Int64
-        A:                    OK (0.17s)
-        B:                    OK (0.01s)
+        A:                    OK
+        B:                    OK
       Double
-        A:                    OK (0.16s)
-        B:                    OK (0.01s)
+        A:                    OK
+        B:                    OK
     407
       Float
-        isNaN:                OK (0.04s)
-        isInfinite:           OK (0.22s)
+        isNaN:                OK
+        isInfinite:           OK
       Double
-        isNaN:                OK (0.04s)
-        isInfinite:           OK (0.22s)
+        isNaN:                OK
+        isInfinite:           OK
     409
       Float
-        A:                    OK (0.22s)
+        A:                    OK
       Double
-        A:                    OK (0.23s)
+        A:                    OK
     436
-      A:                      OK (0.14s)
-      B:                      OK (0.12s)
+      A:                      OK
+      B:                      OK
     437:                      FAIL (expected)
       src/Data/Array/Accelerate/Test/NoFib/Issues/Issue437.hs:42:
       This test requires building with -fdebug(expected failure)
-    439:                      OK (0.07s)
+    439:                      OK
 
-5 out of 615 tests failed (535.77s)
+All 615 tests passed (1009.22s)
 
-accelerate-llvm-ptx> Test suite nofib-llvm-ptx failed
-Test suite failure for package accelerate-llvm-ptx-1.3.0.0
-    nofib-llvm-ptx:  exited with: ExitFailure 1
-Logs printed to console
-
+accelerate-llvm-native> Test suite nofib-llvm-native passed

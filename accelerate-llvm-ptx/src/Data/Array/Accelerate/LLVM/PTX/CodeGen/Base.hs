@@ -402,11 +402,11 @@ shfl mode typer a delta = case typer of
       FloatingNumType TypeHalf   -> cast_shfl_cast_f16 a
       FloatingNumType TypeFloat  -> shfl_f32         a
 
-      IntegralNumType TypeInt    -> shfl_64_bit_i a
-      IntegralNumType TypeWord   -> shfl_64_bit_i a
-      IntegralNumType TypeInt64  -> shfl_64_bit_i a
-      IntegralNumType TypeWord64 -> shfl_64_bit_i a
-      FloatingNumType TypeDouble -> shfl_64_bit_f a
+      IntegralNumType TypeInt    -> shfl_64_bit a
+      IntegralNumType TypeWord   -> shfl_64_bit a
+      IntegralNumType TypeInt64  -> shfl_64_bit a
+      IntegralNumType TypeWord64 -> shfl_64_bit a
+      FloatingNumType TypeDouble -> shfl_64_bit a
 
     VectorScalarType vectyp -> shfl_vec vectyp a
   where
@@ -428,22 +428,13 @@ shfl mode typer a delta = case typer of
                       >=> cast_shfl_cast_i @Int16
                       >=> bitcast scalarType scalarType
 
-    -- Shuffle a 64 bit integral
-    shfl_64_bit_i :: (IsIntegral a) => Operands a -> CodeGen PTX (Operands a)
-    shfl_64_bit_i x = do
+    -- Shuffle a 64 bit thing
+    shfl_64_bit :: IsScalar a => Operands a -> CodeGen PTX (Operands a)
+    shfl_64_bit x = do
       let vectype = VectorScalarType (VectorType 2 (NumSingleType (IntegralNumType TypeInt32))) :: ScalarType (Vec 2 Int32)
       x' <- bitcast scalarType vectype x
       x'' <- shfl mode (TupRsingle vectype) x' delta
       bitcast vectype scalarType x''
-
-    -- Shuffle a 64 bit floating point number
-    shfl_64_bit_f :: (IsFloating a) => Operands a -> CodeGen PTX (Operands a)
-    shfl_64_bit_f x = do
-      let vecType = VectorType 2 (NumSingleType (FloatingNumType TypeFloat)) :: VectorType (Vec 2 Float)
-      let vecScalType = VectorScalarType vecType
-      x' <- bitcast scalarType vecScalType x
-      x'' <- shfl_vec vecType x'
-      bitcast vecScalType scalarType x''
 
     shfl_vec :: VectorType a -> Operands a -> CodeGen PTX (Operands a)
     shfl_vec (VectorType 0 _) x = return x
