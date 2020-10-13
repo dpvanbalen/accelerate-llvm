@@ -599,6 +599,10 @@ dynamicSharedMem tp int n@(op int -> m) (op int -> offset)
           b <- instr' $ Add numTp i a
           return (b, ir t (unPtr q))
     --
+    -- n0 <- A.eq (NumSingleType numTp) n (lift (TupRsingle (SingleScalarType (NumSingleType numTp))) 0)
+    -- ad <- ifThenElse (tp, return n0)
+    --   _ --In dynamicSharedMem (in codegen/ptx/base.hs), am I right in saying that this function errors if (n==0)? If so, I think I'm running into that with (my current implementation of) FoldSeg, and I'm not sure how to fix it. 
+    --   (P.snd <$> go tp offset)
     (_, ad) <- go tp offset
     sz      <- A.fromIntegral int (numType :: NumType Int) n
     return   $ IRArray { irArrayRepr       = ArrayR dim1 tp

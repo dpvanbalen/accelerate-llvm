@@ -301,10 +301,10 @@ mkFoldSegP_warp aenv repr@(ArrayR shr tp) intTp combine mseed marr mseg = do
       grid n m           = multipleOf n (m `P.quot` ws)
       gridQ              = [|| \n m -> $$multipleOfQ n (m `P.quot` ws) ||]
       --
-      per_warp_bytes     = per_warp_elems * bytesElt tp
-      per_warp_elems -- If we use the Shfl kernel, we still need shared memory for the segments
-        | useSMem dev    = 2 `P.max` (ws + (ws `P.quot` 2))
-        | otherwise      = 2
+      per_warp_bytes -- segment smem is aliassed with the smem to communicate values
+        | True           = (4 * 2) `P.max` (bytesElt tp * per_warp_elems)
+        --  otherwise      =  4 * 2 -- in case of 'useSMem == False' this sounds right, but crashes..
+      per_warp_elems     = ws + (ws `P.quot` 2)
       ws                 = CUDA.warpSize dev
 
       int32 :: Integral a => a -> Operands Int32
@@ -340,7 +340,7 @@ mkFoldSegP_warp aenv repr@(ArrayR shr tp) intTp combine mseed marr mseg = do
     --
     lim   <- do
       a <- A.mul numType wid (int32 per_warp_bytes)
-      b <- dynamicSharedMem (TupRsingle scalarTypeInt) TypeInt32 (liftInt32 2) a
+      b <- dynamicSharedMem (TupRsingle scalarTypeInt) TypeInt32 (liftInt32 0) a
       return b
 
     -- Allocate (1.5 * warpSize) elements of shared memory for each warp to
@@ -353,7 +353,7 @@ mkFoldSegP_warp aenv repr@(ArrayR shr tp) intTp combine mseed marr mseg = do
       a <- A.mul numType wid (int32 per_warp_bytes)
       b <- case useSMem dev of
         True  -> dynamicSharedMem tp TypeInt32 (int32 per_warp_elems) a
-        False -> dynamicSharedMem tp TypeInt32 (int32 (0 :: Int32))   a
+        False -> dynamicSharedMem tp TypeInt32 (liftInt32 0)          (liftInt32 0)
       return b
 
     -- Compute the number of segments and size of the innermost dimension. These
