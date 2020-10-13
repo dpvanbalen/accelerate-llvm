@@ -246,7 +246,7 @@ _compileModuleNVPTX dev mdl =
 
     -- Run the standard optimisation pass
     --
-    let pss = LLVM.defaultCuratedPassSetSpec { LLVM.optLevel = Just 0 } -- TODO DB 3
+    let pss = LLVM.defaultCuratedPassSetSpec { LLVM.optLevel = Just 3 }
     LLVM.withPassManager pss $ \pm -> do
 
       b1 <- LLVM.runPassManager pm mdl
