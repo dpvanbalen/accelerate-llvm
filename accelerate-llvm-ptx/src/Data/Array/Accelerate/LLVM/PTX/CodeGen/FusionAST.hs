@@ -13,7 +13,6 @@ import Data.Array.Accelerate.AST (Direction)
 import Data.Array.Accelerate.Representation.Type
 import Data.Array.Accelerate.LLVM.CodeGen.IR
 import Data.Array.Accelerate.LLVM.CodeGen.Sugar
-import Data.Array.Accelerate.AST.LeftHandSide
 import Data.Type.Equality
 
 
@@ -70,7 +69,7 @@ data (:>) big small where
 -- | Describes tuplists. Avoid adding `IsTupList` constraints to everything,
 -- instead use `mkProof` and `mkProof'`.
 class IsTupList a where
-  tupListProof :: Either (a :~: ()) (Exists2 (TupListProof a))
+  tupListProof :: Either (a :~: ()) (TupListProof a)
   
   identityW :: a :> a
   emptyW :: a :> ()
@@ -81,39 +80,36 @@ instance IsTupList () where
   emptyW = End
 
 instance IsTupList y => IsTupList (y, x) where
-  tupListProof = Right $ Exists2 $ TupListProof Refl
+  tupListProof = Right $ TupListProof Refl
   identityW = Keep identityW
   emptyW = Toss emptyW
 
 
-data Exists2 (f :: * -> * -> *) where
-  Exists2 :: f a b -> Exists2 f
-
-newtype TupListProof a b x = TupListProof (IsTupList b => (a :~: (b, x)))
+data TupListProof a = forall b x. TupListProof (IsTupList b => (a :~: (b, x)))
 
 
 
 
-data IsTupListProof a b = IsTupList b => P (a :~: b)
+data IsTupListProof a = forall b. IsTupList b => P (a :~: b)
 
-mkProof :: a :> b -> Exists (IsTupListProof a)
-mkProof End      = Exists (P Refl)
-mkProof (Keep w) = case mkProof w of Exists (P Refl) -> Exists (P Refl)
-mkProof (Toss w) = case mkProof w of Exists (P Refl) -> Exists (P Refl)
+mkProof :: a :> b -> IsTupListProof a
+mkProof End      = P Refl
+mkProof (Keep w) = case mkProof w of P Refl -> P Refl
+mkProof (Toss w) = case mkProof w of P Refl -> P Refl
 
-mkProof' :: a :> b -> Exists (IsTupListProof b)
-mkProof' End      = Exists (P Refl)
-mkProof' (Keep w) = case mkProof' w of Exists (P Refl) -> Exists (P Refl)
-mkProof' (Toss w) = case mkProof' w of Exists (P Refl) -> Exists (P Refl)
+mkProof' :: a :> b -> IsTupListProof b
+mkProof' End      = P Refl
+mkProof' (Keep w) = case mkProof' w of P Refl -> P Refl
+mkProof' (Toss w) = case mkProof' w of P Refl -> P Refl
 
-mkProofT :: TreeTokenContent aenv a b -> Exists (IsTupListProof a)
-mkProofT Leaf = Exists (P Refl)
-mkProofT (Skip          t) = case mkProofT t of Exists (P Refl) -> Exists (P Refl)
-mkProofT (ScanT _ _ _ _ t) = case mkProofT t of Exists (P Refl) -> Exists (P Refl)
-mkProofT (FoldT _ _ _   t) = case mkProofT t of Exists (P Refl) -> Exists (P Refl)
+mkProofT :: TreeTokenContent aenv a b -> IsTupListProof a
+mkProofT Leaf = P Refl
+mkProofT (Skip          t) = case mkProofT t of P Refl -> P Refl
+mkProofT (ScanT _ _ _ _ t) = case mkProofT t of P Refl -> P Refl
+mkProofT (FoldT _ _ _   t) = case mkProofT t of P Refl -> P Refl
 
-mkProofT' :: TreeTokenContent aenv a b -> Exists (IsTupListProof b)
-mkProofT' Leaf = Exists (P Refl)
-mkProofT' (Skip          t) = case mkProofT' t of Exists (P Refl) -> Exists (P Refl)
-mkProofT' (ScanT _ _ _ _ t) = case mkProofT' t of Exists (P Refl) -> Exists (P Refl)
-mkProofT' (FoldT _ _ _   t) = case mkProofT' t of Exists (P Refl) -> Exists (P Refl)
+mkProofT' :: TreeTokenContent aenv a b -> IsTupListProof b
+mkProofT' Leaf              = P Refl
+mkProofT' (Skip          t) = case mkProofT' t of P Refl -> P Refl
+mkProofT' (ScanT _ _ _ _ t) = case mkProofT' t of P Refl -> P Refl
+mkProofT' (FoldT _ _ _   t) = case mkProofT' t of P Refl -> P Refl
