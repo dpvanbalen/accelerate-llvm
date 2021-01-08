@@ -46,12 +46,15 @@ type FusedAcc = Fused FUSED
 
 data TreeTokenContent aenv i o where
   Leaf  :: TreeTokenContent aenv ()      ()
-  -- TODO rename to 'node'?
+
+  -- TODO rename?
   Skip  :: TreeTokenContent aenv  x       y  
         -> TreeTokenContent aenv (x, a)  (y, a)
+
   ScanT :: TypeR a -> IRFun2 PTX aenv (a -> a -> a) -> Maybe (Operands a) -> Direction
         -> TreeTokenContent aenv (x, Operands a)  y
         -> TreeTokenContent aenv (x, Operands a) (y, Operands a) 
+  
   FoldT :: TypeR a -> IRFun2 PTX aenv (a -> a -> a) -> Maybe (Operands a) 
         -> TreeTokenContent aenv (x, Operands a)  y
         -> TreeTokenContent aenv (x, Operands a) (y, Operands a)
@@ -61,7 +64,7 @@ data TreeTokenContent aenv i o where
 -- | Defunctionalised weakening for tuplists.
 data (:>) big small where
   End  ::           ()     :> ()
-  Toss :: b :> s -> (b, x) :> s
+  Toss :: b :> s -> (b, x) :>  s
   Keep :: b :> s -> (b, x) :> (s, x)
 
 
