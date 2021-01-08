@@ -51,13 +51,25 @@ data TreeTokenContent aenv i o where
   Skip  :: TreeTokenContent aenv  x       y  
         -> TreeTokenContent aenv (x, a)  (y, a)
 
-  ScanT :: TypeR a -> IRFun2 PTX aenv (a -> a -> a) -> Maybe (Operands a) -> Direction
+  ScanT :: TypeR a -> IRFun2 PTX aenv (a -> a -> a) -> Maybe (Operands a) 
+        -> Direction -- It's possible that the entire TreeToken should have
+        -- just one direction, or at least all scans/folds over the same input.
         -> TreeTokenContent aenv (x, Operands a)  y
         -> TreeTokenContent aenv (x, Operands a) (y, Operands a) 
   
   FoldT :: TypeR a -> IRFun2 PTX aenv (a -> a -> a) -> Maybe (Operands a) 
         -> TreeTokenContent aenv (x, Operands a)  y
         -> TreeTokenContent aenv (x, Operands a) (y, Operands a)
+
+
+-- | Utility for TreeTokenContent: Gives proof that
+-- allows you to recursively consume scan/fold much
+-- easier.
+data TreeRefl b c = forall d. TreeRefl (c :~: (d, b))
+mkRefl :: TreeTokenContent aenv (a, b) c -> TreeRefl b c
+mkRefl Skip {} = TreeRefl Refl
+mkRefl ScanT{} = TreeRefl Refl
+mkRefl FoldT{} = TreeRefl Refl
 
 
 
@@ -69,7 +81,7 @@ data (:>) big small where
 
 
 -- | Describes tuplists. Avoid adding `IsTupList` constraints to everything,
--- instead use `mkProof` and `mkProof'`.
+-- instead use `mkProof` and `mkProof'`. 
 class IsTupList a where
   tupListProof :: Either (a :~: ()) (TupListProof a)
   

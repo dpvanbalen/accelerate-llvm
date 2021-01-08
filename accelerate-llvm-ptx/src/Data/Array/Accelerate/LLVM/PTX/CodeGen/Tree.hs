@@ -35,6 +35,7 @@ import qualified Foreign.CUDA.Analysis                              as CUDA
 import Control.Monad                                                ( (>=>) )
 import Data.Bits                                                    as P
 import Prelude                                                      as P
+import Data.Type.Equality
 
 
 
@@ -48,13 +49,19 @@ compileTreeToken = undefined
 
 
 
+
 treeWarpShfl
     :: forall aenv i o.
        DeviceProperties 
     -> TreeTokenContent aenv i o
-    -> i                          -- tuplist of Operands
+    -> Either i o
     -> CodeGen PTX o
-treeWarpShfl dev token = initialStep >=> tree 1
+treeWarpShfl dev token eitherio = case eitherio of
+              -- First call
+              Left i -> gather i >>= tree 0
+              
+              -- Later calls
+              Right o -> tree 0 o
   where
     log2 = P.logBase 2 :: Double -> Double
 
@@ -71,36 +78,34 @@ treeWarpShfl dev token = initialStep >=> tree 1
         -- I don't know if that is noticable, and if it even 
         -- matters without `free`ing the variables in between. 
         -- How does memory management work in CUDA?
+        -- If this would have any performance benefit, it would
+        -- surely be worth the effort!
         y  <- shuffles x offset
         x' <- combines x y
         tree (step + 1) x'
 
 
-    -- | Separated from the rest of the loop, as it changes the size (and thus type)
-    --   of the variables we're looking at (as a result of horizontal fusion).
-    initialStep :: i -> CodeGen PTX o
-    initialStep = undefined 
-    -- case d == dir of -- quick check
-    --         False -> error "oops" 
-    --         True -> case t of
-    --           ScanT _ _ _ _ -> case thing of
-    --             (first, rest) -> return (first, (first, rest))
-    --           FoldT _ _ _   -> case thing of
-    --             (first, rest) -> return (first, (first, rest))
-    --           _               -> do
-    --             res <- shfl_down _ _ offset
-    --             (res,) <$> go t b
-
-    shuffles :: o -> Operands Word32 -> CodeGen PTX o
-    shuffles x offset = go token x
+    -- | Separated from the loop, as it changes the size (and thus type)
+    -- of the variables we're looking at (as a result of horizontal fusion).
+    gather :: i -> CodeGen PTX o
+    gather = go token
       where
-        go :: forall a b. TreeTokenContent aenv a b -> b -> CodeGen PTX b
+        go :: TreeTokenContent aenv a b -> a -> CodeGen PTX b
+        go Leaf () = return ()
+        go (Skip t) (a, b) = (,b) <$> go t a
+        go (ScanT _ _ _ _ t) a = case mkRefl t of
+          TreeRefl Refl -> (\(x, y) -> ((x, y), y)) <$> go t a
+        go (FoldT _ _ _ t) a = case mkRefl t of
+          TreeRefl Refl -> (\(x, y) -> ((x, y), y)) <$> go t a
+
+    shuffles :: Operands Word32 -> o -> CodeGen PTX o
+    shuffles offset = go token
+      where
+        go :: TreeTokenContent aenv a b -> b -> CodeGen PTX b
         go Leaf              ()     = return ()
         go (Skip  t)         (a, b) = (,b) <$> go t a
-        go (ScanT r _ _ _ t) (a, b) = (,)
-                  <$> go t a <*> shfl_up   r b offset
-        go (FoldT r _ _ t)   (a, b) = (,)
-                  <$> go t a <*> shfl_down r b offset 
+        go (ScanT r _ _ _ t) (a, b) = (,)  <$> go t a <*> shfl_up   r b offset
+        go (FoldT r _ _ t)   (a, b) = (,)  <$> go t a <*> shfl_down r b offset 
 
     combines :: o -> o -> CodeGen PTX o
     combines = go token
@@ -112,3 +117,5 @@ treeWarpShfl dev token = initialStep >=> tree 1
           LeftToRight ->                                           app2 c a b
           RightToLeft ->                                           app2 c b a
         go (FoldT _ c _ t)   (x, a) (y, b) = (,)  <$> go t x y <*> app2 c a b
+
+
