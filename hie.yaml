@@ -6,9 +6,3 @@ cradle:
       component: "accelerate-llvm-native:lib"
     - path: "./accelerate-llvm-ptx"
       component: "accelerate-llvm-ptx:lib"
-    #stackYaml: "stack-8.10.yaml"
-    #components:
-    #- path: "accelerate-llvm-native/test/nofib"
-    #  component: "accelerate-llvm-native:test:nofib-llvm-native"
-    #- path: "accelerate-llvm-ptx/test/nofib"
-    #  component: "accelerate-llvm-ptx:test:nofib-llvm-ptx"

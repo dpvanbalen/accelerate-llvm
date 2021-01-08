@@ -723,7 +723,7 @@ reduceFromTo dev tp from to combine get set = do
                -- All threads in the block will participate in the reduction, so
                -- we can avoid bounds checks
                x <- get i
-               r <- reduceBlockShfl dev tp combine Nothing x
+               r <- reduceBlock dev tp combine Nothing x
                set r
 
                return (lift TupRunit ())
@@ -733,7 +733,7 @@ reduceFromTo dev tp from to combine get set = do
                when (A.lt singleType i to) $ do
                  x <- get i
                  v <- i32 valid
-                 r <- reduceBlockShfl dev tp combine (Just v) x
+                 r <- reduceBlock dev tp combine (Just v) x
                  set r
 
                return (lift TupRunit ())

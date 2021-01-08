@@ -100,6 +100,8 @@ Library
     Data.Array.Accelerate.LLVM.PTX.CodeGen.Base
     Data.Array.Accelerate.LLVM.PTX.CodeGen.Fold
     Data.Array.Accelerate.LLVM.PTX.CodeGen.FoldSeg
+    Data.Array.Accelerate.LLVM.PTX.CodeGen.Fusion
+    Data.Array.Accelerate.LLVM.PTX.CodeGen.FusionAST
     Data.Array.Accelerate.LLVM.PTX.CodeGen.Generate
     Data.Array.Accelerate.LLVM.PTX.CodeGen.Intrinsic
     Data.Array.Accelerate.LLVM.PTX.CodeGen.Loop
@@ -108,6 +110,7 @@ Library
     Data.Array.Accelerate.LLVM.PTX.CodeGen.Scan
     Data.Array.Accelerate.LLVM.PTX.CodeGen.Stencil
     Data.Array.Accelerate.LLVM.PTX.CodeGen.Transform
+    Data.Array.Accelerate.LLVM.PTX.CodeGen.Tree
 
     Data.Array.Accelerate.LLVM.PTX.Compile
     Data.Array.Accelerate.LLVM.PTX.Compile.Cache
