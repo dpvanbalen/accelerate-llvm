@@ -24,12 +24,11 @@ data Fused t aenv i o where
   EndOfFused :: o :> o'                                      -> Fused FUSED aenv o o'
 
   -- | Some LLVM, representing non-tree things. Produces a single result on top of the tuplist.
-  BaseToken  :: i :> i' -> (i -> CodeGen PTX o)              -> Fused TOKEN aenv i (i', o)
+  BaseToken  :: IsTupList i => (i -> CodeGen PTX o)          -> Fused TOKEN aenv i (i, o)
 
   -- | Any number of folds and scans that get loop-fused (horizontally).
   -- Produces many results, and TreeTokenContent innately has weakening.
-  TreeToken  :: o :> o' -> TreeTokenContent aenv i o         -> Fused TOKEN aenv i o'
-
+  TreeToken  :: TreeTokenContent aenv i o                    -> Fused TOKEN aenv i o
 
 data TOKEN
 data FUSED
@@ -61,7 +60,7 @@ data TreeTokenContent aenv i o where
 
 -- | Defunctionalised weakening for tuplists.
 data (:>) big small where
-  End  ::                                         ()     :> ()
+  End  ::           ()     :> ()
   Toss :: b :> s -> (b, x) :> s
   Keep :: b :> s -> (b, x) :> (s, x)
 
@@ -103,7 +102,7 @@ mkProof' (Keep w) = case mkProof' w of P Refl -> P Refl
 mkProof' (Toss w) = case mkProof' w of P Refl -> P Refl
 
 mkProofT :: TreeTokenContent aenv a b -> IsTupListProof a
-mkProofT Leaf = P Refl
+mkProofT Leaf             = P Refl
 mkProofT (Skip          t) = case mkProofT t of P Refl -> P Refl
 mkProofT (ScanT _ _ _ _ t) = case mkProofT t of P Refl -> P Refl
 mkProofT (FoldT _ _ _   t) = case mkProofT t of P Refl -> P Refl
