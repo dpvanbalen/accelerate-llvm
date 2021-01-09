@@ -1,15 +1,18 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GADTs #-}
-module Data.Array.Accelerate.LLVM.PTX.CodeGen.Fusion where
+module Data.Array.Accelerate.LLVM.PTX.CodeGen.Fusion
+  ( codegenFused
+  , horizontal
+  , vertical
+  , diagonal
+  ) where
 
-import Data.Array.Accelerate.LLVM.CodeGen.Monad         (return_,  CodeGen )
-import Data.Array.Accelerate.LLVM.PTX.Target            ( PTX )
+import Data.Array.Accelerate.LLVM.CodeGen.Monad
+import Data.Array.Accelerate.LLVM.PTX.Target
 import Data.Array.Accelerate.LLVM.PTX.CodeGen.FusionAST
 import Data.Array.Accelerate.LLVM.PTX.CodeGen.Tree
-import Data.Array.Accelerate.AST.LeftHandSide
 import Data.Type.Equality
 
 ----- codegen ----
@@ -22,7 +25,7 @@ compile :: Fused t aenv i o -> i -> (o -> CodeGen PTX ()) -> CodeGen PTX ()
 compile (Sequence one two)  i c = compile one i $ flip (compile two) c
 compile (EndOfFused w)      i c = case (mkProof w, mkProof' w) of (P Refl, P Refl) -> c (w $:> i)
 compile (BaseToken token) i c =                  token i >>= c . (i,)
-compile (TreeToken token) i c = compileTreeToken token i >>= c 
+compile (TreeToken token) i c = compileTreeToken token i >>= c
 
 ----- /codegen ----
 
@@ -39,19 +42,19 @@ vertical (Sequence x xs) acc = Sequence x (vertical xs acc)
 data DiagOutput aenv a b c = forall d. DiagOutput (FusedAcc aenv a d) (d :> b) (d :> c)
 
 diagonal :: forall aenv a b c. FusedAcc aenv a b -> FusedAcc aenv b c -> DiagOutput aenv a b c
-diagonal (EndOfFused w) (EndOfFused w') = case mkProof w' of 
+diagonal (EndOfFused w) (EndOfFused w') = case mkProof w' of
   P Refl ->                   DiagOutput (EndOfFused w) identityW w'
 
 diagonal (EndOfFused w) (Sequence y ys) = case mkProof w of
   P Refl -> case y of
     BaseToken f -> case diagonal (EndOfFused (Keep w)) ys of
-        DiagOutput ys' db dc -> DiagOutput (Sequence (BaseToken (f . (w $:>))) ys') 
-                                           (Toss identityW .:> db) 
+        DiagOutput ys' db dc -> DiagOutput (Sequence (BaseToken (f . (w $:>))) ys')
+                                           (Toss identityW .:> db)
                                            dc
     TreeToken t -> let wtree = weakenFromTree t
                    in case weakenTreeToken w t of
       WTO t' oo    -> case diagonal (EndOfFused oo) ys of
-        DiagOutput ys' db dc -> DiagOutput (Sequence (TreeToken t') ys') 
+        DiagOutput ys' db dc -> DiagOutput (Sequence (TreeToken t') ys')
                                            (wtree .:> db)
                                            dc
 
@@ -64,78 +67,39 @@ diagonal (Sequence x xs) acc = case diagonal xs acc of
 
 ---- horizontal ----
 
+-- |Here we take care to fuse efficiently: we consume `BaseToken`s on both sides until
+-- we encounter an EOF or two `TreeToken`s, which we can perform loop fusion on.
+-- This greedy method is good enough to guarantee we never increase the number of
+-- `TreeToken`s, which is the best we can do.
 horizontal :: FusedAcc aenv a b -> FusedAcc aenv a c -> HorizontalOutput aenv a b c
-horizontal (EndOfFused wb) (EndOfFused wc) = case wb &:> wc of
+horizontal (EndOfFused wb) (EndOfFused wc) = case wb -:> wc of
   Union tot b c ->                           HorizontalOutput (EndOfFused tot) b c
-
-horizontal (Sequence x xs) (Sequence y ys) = case horizontalToken x y of        -- fuse   the heads
-  HorizontalTokenOutput one two wone wtwo -> let xs' = weakenFused wone xs      -- weaken the tails
-                                                 ys' = weakenFused wtwo ys
-                                             in case horizontal xs' ys' of      -- fuse   the tails
-              HorizontalOutput xys db dc  -> HorizontalOutput (Sequence one
-                                                                        (Sequence two 
-                                                                                  xys)) 
-                                                              db 
-                                                              dc
-
-horizontal (EndOfFused weof) (Sequence x xs) = case x                                      of
-
-  BaseToken f                               -> case horizontal (EndOfFused (Keep weof)) xs of
-    HorizontalOutput xs'' left right        -> case mkProof' weof                          of
-      P Refl                                -> HorizontalOutput (Sequence (BaseToken f) 
-                                                                          xs'') 
-                                                                (Toss identityW .:> left) 
-                                                                right
-
-  TreeToken tree -> let wtree  = weakenFromTree tree 
-                    in  case horizontal (EndOfFused (weof .:> wtree)) xs of
-    HorizontalOutput xs'' left right -> HorizontalOutput (Sequence (TreeToken tree) 
-                                                                   xs'') 
-                                                         left 
-                                                         right
--- calling the cases above
-horizontal (Sequence x xs) (EndOfFused w) = case horizontal (EndOfFused w) (Sequence x xs) of 
-  HorizontalOutput res a b -> HorizontalOutput res b a
+horizontal (EndOfFused w) (Sequence y ys) = case y of
+  BaseToken f -> case horizontal (EndOfFused (Toss w)) ys of
+    HorizontalOutput ys' wleft wright -> HorizontalOutput (Sequence (BaseToken f) ys') wleft wright
+  TreeToken t -> let wtree = weakenFromTree t
+                 in case horizontal (EndOfFused (w .:> wtree)) ys of
+    HorizontalOutput ys' wleft wright -> HorizontalOutput (Sequence (TreeToken t) ys') wleft wright
+horizontal (Sequence (TreeToken x) xs) (Sequence (TreeToken y) ys) = case horizontalTree x y of
+  HorizontalTreeOutput tree wleft wright -> let xs' = weakenFused wleft  xs
+                                                ys' = weakenFused wright ys
+                                            in case horizontal xs' ys' of
+    HorizontalOutput hor wleft' wright' -> HorizontalOutput (Sequence (TreeToken tree) hor) wleft' wright'
+horizontal (Sequence (BaseToken x) xs) ys = let ys' = weakenFused (Toss identityW) ys
+                                            in case horizontal xs ys' of
+  HorizontalOutput hor wleft wright -> HorizontalOutput (Sequence (BaseToken x) hor) wleft wright
+-- The remaining symmetrical cases: (TreeToken, BaseToken) and (TreeToken, EOF).
+horizontal tree baseOrEOF = case horizontal baseOrEOF tree of
+  HorizontalOutput a b c -> HorizontalOutput a c b
 
 data HorizontalOutput aenv a b c = forall d. HorizontalOutput (FusedAcc aenv a d) (d :> b) (d :> c)
 
 
-
--- Because we can't sequence two TOKENs, nor return both results from one token, we return two tokens that match
-horizontalToken :: Fused TOKEN aenv a b -> Fused TOKEN aenv a c -> HorizontalTokenOutput aenv a b c
-horizontalToken (BaseToken  xb) (BaseToken  xc) = HorizontalTokenOutput (BaseToken  xb)
-                                                                        (BaseToken (xc . (Toss identityW  $:>)))
-                                                                        (Toss        identityW)
-                                                                        (Keep $ Toss identityW)
-horizontalToken (BaseToken  x) (TreeToken  t) = case mkProofT' t of 
-  P Refl                               -> HorizontalTokenOutput (BaseToken x)
-                                                                          (TreeToken $ Skip t)
-                                                                          (Keep $ weakenFromTree t) 
-                                                                          (Toss   identityW)
-horizontalToken (TreeToken  t) (BaseToken  x) = case mkProofT' t of 
-  P Refl                               -> HorizontalTokenOutput (BaseToken x)
-                                                                          (TreeToken (Skip t))
-                                                                          (Toss   identityW)
-                                                                          (Keep $ weakenFromTree t) 
--- In the case of two TreeTokens, we perform loop fusion with `horizontalTree`. Because we have to return
--- two tokens, we add a dummy BaseToken that puts () on the environment (and weaken it away later).
-horizontalToken (TreeToken  l) (TreeToken  r) = case horizontalTree l r of
-  HorizontalTreeOutput tree db dc                -> case (mkProofT tree, mkProofT' tree) of
-    (P Refl, P Refl)                             -> HorizontalTokenOutput (BaseToken (const return_))
-                                                                          (TreeToken $ Skip tree)
-                                                                          (Toss db)
-                                                                          (Toss dc)
-
-
--- | `d` is the resulting environment containing `b` and `c`, `t` is just a temporary environment between the two tokens
-data HorizontalTokenOutput aenv a b c = forall d t. HorizontalTokenOutput (Fused TOKEN aenv a t) (Fused TOKEN aenv t d) (d :> b) (d :> c)
-
-
-horizontalTree :: TreeTokenContent aenv i a -> TreeTokenContent aenv i b -> HorizontalTreeOutput aenv i a b
+horizontalTree :: TreeToken aenv i a -> TreeToken aenv i b -> HorizontalTreeOutput aenv i a b
 horizontalTree Leaf Leaf           = HorizontalTreeOutput Leaf                 End       End
 
 horizontalTree (Skip l) (Skip r)   = case horizontalTree l r of
-  HorizontalTreeOutput tree ca cb -> HorizontalTreeOutput (Skip          tree) (Keep ca) (Keep cb) 
+  HorizontalTreeOutput tree ca cb -> HorizontalTreeOutput (Skip          tree) (Keep ca) (Keep cb)
 
 horizontalTree (ScanT a b c d l) r = case horizontalTree l r of
   HorizontalTreeOutput tree ca cb -> HorizontalTreeOutput (ScanT a b c d tree) (Keep ca) (Toss cb)
@@ -148,8 +112,8 @@ horizontalTree (FoldT a b c l) r   = case horizontalTree l r of
 
 horizontalTree l (FoldT a b c r)   = case horizontalTree l r of
   HorizontalTreeOutput tree ca cb -> HorizontalTreeOutput (FoldT a b c   tree) (Toss ca) (Keep cb)
-  
-data HorizontalTreeOutput aenv i a b = forall c. HorizontalTreeOutput (TreeTokenContent aenv i c) (c :> a) (c :> b)
+
+data HorizontalTreeOutput aenv i a b = forall c. HorizontalTreeOutput (TreeToken aenv i c) (c :> a) (c :> b)
 
 
 ---- /horizontal ----
@@ -161,8 +125,8 @@ data HorizontalTreeOutput aenv i a b = forall c. HorizontalTreeOutput (TreeToken
 
 ---- utilities for fusion ----
 
--- | A TreeTokenContent strictly adds to the environment, so we can derive the reverse weakening
-weakenFromTree :: TreeTokenContent aenv a b -> b :> a
+-- | A TreeToken strictly adds to the environment, so we can derive the reverse weakening
+weakenFromTree :: TreeToken aenv a b -> b :> a
 weakenFromTree Leaf              = End
 weakenFromTree (Skip          t) = Keep $ weakenFromTree t
 weakenFromTree (ScanT _ _ _ _ t) = Toss $ weakenFromTree t
@@ -170,43 +134,32 @@ weakenFromTree (FoldT _ _ _   t) = Toss $ weakenFromTree t
 
 
 weakenFused :: i' :> i -> FusedAcc aenv i o -> FusedAcc aenv i' o
-weakenFused ii (Sequence x y) = case weakenFusedT ii x of 
+weakenFused ii (Sequence x y) = case weakenFusedT ii x of
                     WO x' oo' -> Sequence x' $ weakenFused oo' y
 weakenFused ii (EndOfFused w) = EndOfFused $ w .:> ii
 
 data WeakenOutput aenv i o = forall o'. WO (Fused TOKEN aenv i o') (o' :> o)
 weakenFusedT :: i' :> i -> Fused TOKEN aenv i o -> WeakenOutput aenv i' o
-weakenFusedT w (BaseToken   t) = case mkProof  w  of P Refl -> WO (BaseToken (t . (w $:>))) (Keep w) 
+weakenFusedT w (BaseToken   t) = case mkProof  w  of P Refl -> WO (BaseToken (t . (w $:>))) (Keep w)
 weakenFusedT w (TreeToken   t) = case weakenTreeToken w t of
                                                  WTO t' oo -> WO (TreeToken t') oo
 
 
-data WeakenTreeOutput aenv i o = forall o'. WTO (TreeTokenContent aenv i o') (o' :> o)
+data WeakenTreeOutput aenv i o = forall o'. WTO (TreeToken aenv i o') (o' :> o)
 
-weakenTreeToken :: i' :> i -> TreeTokenContent aenv i o -> WeakenTreeOutput aenv i' o
+weakenTreeToken :: i' :> i -> TreeToken aenv i o -> WeakenTreeOutput aenv i' o
 weakenTreeToken End      Leaf              =                                                 WTO Leaf               End
 weakenTreeToken (Toss w)                t  = case weakenTreeToken       w  t of WTO t' w' -> WTO (Skip          t') (Toss w')
 weakenTreeToken (Keep w) (Skip          t) = case weakenTreeToken       w  t of WTO t' w' -> WTO (Skip          t') (Keep w')
 weakenTreeToken (Keep w) (ScanT a b c d t) = case weakenTreeToken (Keep w) t of WTO t' w' -> WTO (ScanT a b c d t') (Keep w')
 weakenTreeToken (Keep w) (FoldT a b c   t) = case weakenTreeToken (Keep w) t of WTO t' w' -> WTO (FoldT a b c   t') (Keep w')
 
--- | could also make this work on Fused TOKENs
-weakenFused' :: o :> o' -> FusedAcc aenv i o -> FusedAcc aenv i o'
-weakenFused' w (Sequence x xs) = Sequence x $ weakenFused' w xs
-weakenFused' w (EndOfFused w') = EndOfFused $ w .:> w'
 
 ---- /utilities for fusion ----
 
 
 
 ---- utilities for weakenings ----
-
--- | Vertical fusion for weakenings
-(|:>) :: (a :> b) -> (b :> c) -> a :> c
-(|:>) = flip (.:>)
-
--- TODO Diagonal fusion for weakenings
--- ... or does that not make sense? 
 
 
 -- | Composition for weakenings
@@ -225,42 +178,57 @@ End      $:> ()     = ()
 (Keep w) $:> (y, x) = case (mkProof w, mkProof' w) of (P Refl, P Refl) -> (w $:> y, x)
 
 
--- -- | If `isJust $ isIdentity (a &:> b)`, this constructs the union. 
--- -- No type-level proof that this only fails when isIdentity fails, but it's true.
--- (?:>) :: (big :> left) -> (big :> right) -> Maybe (left -> right -> big)
--- End      ?:> End      = Just $ \() () -> ()
--- (Toss _) ?:> (Toss _) = Nothing 
--- (Keep a) ?:> (Toss b) = (\f (l, x)     r  -> (f l r, x)) <$> a ?:> b
--- (Toss a) ?:> (Keep b) = (\f     l  (r, x) -> (f l r, x)) <$> a ?:> b
--- (Keep a) ?:> (Keep b) = (\f (l, x) (r, _) -> (f l r, x)) <$> a ?:> b
 
-data Foo a b = forall union. Foo (a -> b -> union)
 
-(?:>) :: (big :> left) -> (big :> right) -> Foo left right
-End      ?:> End      = Foo $ \() () -> ()
-(Toss a) ?:> (Toss b) = case a ?:> b of Foo f -> Foo $ \ l      r     ->  f l r 
-(Keep a) ?:> (Toss b) = case a ?:> b of Foo f -> Foo $ \(l, x)  r     -> (f l r, x)
-(Toss a) ?:> (Keep b) = case a ?:> b of Foo f -> Foo $ \ l     (r, x) -> (f l r, x)
-(Keep a) ?:> (Keep b) = case a ?:> b of Foo f -> Foo $ \(l, x) (r, _) -> (f l r, x)
 
--- | Horizontal fusion for weakenings --- the union of the subsets
-(-:>) :: (a :> b) -> (a :> c) -> Exists ((:>) a)
-x -:> y = case x &:> y of Union result _ _ -> Exists result
 
 data Union all a b = forall union. Union (all :> union) (union :> a) (union :> b)
+-- |Horizontal fusion for weakenings: Conjures a `union` type variable and produces the
+-- relevant weakenings. Note that the type does not quite capture the full specification:
+--    `x -:> y = Union identityW x y`
+-- would also typecheck. To ensure correctness, we could fuse this function with (?:>).
+(-:>) :: (all :> a) -> (all :> b) -> Union all a b
+End      -:> End      =                                   Union End       End       End
+(Toss a) -:> (Toss b) = case a -:> b of Union xu ua ub -> Union (Toss xu)       ua        ub
+(Keep a) -:> (Toss b) = case a -:> b of Union xu ua ub -> Union (Keep xu) (Keep ua) (Toss ub)
+(Toss a) -:> (Keep b) = case a -:> b of Union xu ua ub -> Union (Keep xu) (Toss ua) (Keep ub)
+(Keep a) -:> (Keep b) = case a -:> b of Union xu ua ub -> Union (Keep xu) (Keep ua) (Keep ub)
 
-(&:>) :: (x :> a) -> (x :> b) -> Union x a b
-End      &:> End      =                                   Union End       End       End
-(Toss a) &:> (Toss b) = case a &:> b of Union xu ua ub -> Union (Toss xu)       ua        ub
-(Keep a) &:> (Toss b) = case a &:> b of Union xu ua ub -> Union (Keep xu) (Keep ua) (Toss ub)
-(Toss a) &:> (Keep b) = case a &:> b of Union xu ua ub -> Union (Keep xu) (Toss ua) (Keep ub)
-(Keep a) &:> (Keep b) = case a &:> b of Union xu ua ub -> Union (Keep xu) (Keep ua) (Keep ub)
-
-isIdentity :: a :> b -> Maybe (a :~: b)
-isIdentity End      = Just Refl
-isIdentity (Keep x) = (\Refl -> Refl) <$> isIdentity x
-isIdentity (Toss _) = Nothing 
 
 ---- /utilities for manipulating weakenings ----
 
 
+---- Utilities that I felt like writing but didn't end up using (yet) ----
+
+-- -- | Vertical fusion for weakenings
+-- (|:>) :: (a :> b) -> (b :> c) -> a :> c
+-- (|:>) = flip (.:>)
+
+-- -- | Diagonal fusion for weakenings
+-- (/:>) :: (a :> b) -> (b :> c) -> (a :> c, b :> c)
+-- x /:> y = (x |:> y, y)
+
+-- -- | could also make this work on Fused TOKENs
+-- weakenFused' :: o :> o' -> FusedAcc aenv i o -> FusedAcc aenv i o'
+-- weakenFused' w (Sequence x xs) = Sequence x $ weakenFused' w xs
+-- weakenFused' w (EndOfFused w') = EndOfFused $ w .:> w'
+
+
+-- -- |Given two weakenings, produces a function that can construct the union environment.
+-- -- Is probably of little use without any kind of proof that it does what it says,
+-- -- you'd like to be able to give this two weakenings whose union is `big` but can't
+-- -- express that on the type level yet. Better would be to fuse this function with (-:>).
+-- data Foo a b = forall union. Foo (a -> b -> union)
+-- (?:>) :: (big :> left) -> (big :> right) -> Foo left right
+-- End      ?:> End      = Foo $ \() () -> ()
+-- (Toss a) ?:> (Toss b) = case a ?:> b of Foo f -> Foo $ \ l      r     ->  f l r
+-- (Keep a) ?:> (Toss b) = case a ?:> b of Foo f -> Foo $ \(l, x)  r     -> (f l r, x)
+-- (Toss a) ?:> (Keep b) = case a ?:> b of Foo f -> Foo $ \ l     (r, x) -> (f l r, x)
+-- (Keep a) ?:> (Keep b) = case a ?:> b of Foo f -> Foo $ \(l, x) (r, _) -> (f l r, x)
+
+
+-- isIdentityW :: a :> b -> Maybe (a :~: b)
+-- isIdentityW End      = Just Refl
+-- isIdentityW (Keep x) = (\Refl -> Refl) <$> isIdentityW x
+-- isIdentityW (Toss _) = Nothing
+--

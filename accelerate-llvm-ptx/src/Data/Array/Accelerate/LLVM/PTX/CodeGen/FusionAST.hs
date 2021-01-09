@@ -1,7 +1,5 @@
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GADTs #-}
 module Data.Array.Accelerate.LLVM.PTX.CodeGen.FusionAST where
@@ -17,18 +15,18 @@ import Data.Type.Equality
 
 
 data Fused t aenv i o where
-  -- | Semicolon or cons: puts a single token in front of the list
+  -- | Semicolon or cons: puts a single token in front of the list.
   Sequence   :: Fused TOKEN aenv a b -> Fused FUSED aenv b c -> Fused FUSED aenv a c
 
-  -- | Empty program, end of the list
+  -- | Empty program, end of the list.
   EndOfFused :: o :> o'                                      -> Fused FUSED aenv o o'
 
   -- | Some LLVM, representing non-tree things. Produces a single result on top of the tuplist.
   BaseToken  :: IsTupList i => (i -> CodeGen PTX o)          -> Fused TOKEN aenv i (i, o)
 
   -- | Any number of folds and scans that get loop-fused (horizontally).
-  -- Produces many results, and TreeTokenContent innately has weakening.
-  TreeToken  :: TreeTokenContent aenv i o                    -> Fused TOKEN aenv i o
+  -- Produces many results, and TreeToken innately has weakening.
+  TreeToken  :: TreeToken aenv i o                    -> Fused TOKEN aenv i o
 
 data TOKEN
 data FUSED
@@ -44,29 +42,29 @@ type FusedAcc = Fused FUSED
 --   vertical loop fusion of trees is not possible,
 --   vertical kernel fusion is done by sequencing tree tokens
 
-data TreeTokenContent aenv i o where
-  Leaf  :: TreeTokenContent aenv ()      ()
+data TreeToken aenv i o where
+  Leaf  :: TreeToken aenv ()      ()
 
   -- TODO rename?
-  Skip  :: TreeTokenContent aenv  x       y  
-        -> TreeTokenContent aenv (x, a)  (y, a)
+  Skip  :: TreeToken aenv  x       y
+        -> TreeToken aenv (x, a)  (y, a)
 
-  ScanT :: TypeR a -> IRFun2 PTX aenv (a -> a -> a) -> Maybe (Operands a) 
+  ScanT :: TypeR a -> IRFun2 PTX aenv (a -> a -> a) -> Maybe (Operands a)
         -> Direction -- It's possible that the entire TreeToken should have
         -- just one direction, or at least all scans/folds over the same input.
-        -> TreeTokenContent aenv (x, Operands a)  y
-        -> TreeTokenContent aenv (x, Operands a) (y, Operands a) 
-  
-  FoldT :: TypeR a -> IRFun2 PTX aenv (a -> a -> a) -> Maybe (Operands a) 
-        -> TreeTokenContent aenv (x, Operands a)  y
-        -> TreeTokenContent aenv (x, Operands a) (y, Operands a)
+        -> TreeToken aenv (x, Operands a)  y
+        -> TreeToken aenv (x, Operands a) (y, Operands a)
+
+  FoldT :: TypeR a -> IRFun2 PTX aenv (a -> a -> a) -> Maybe (Operands a)
+        -> TreeToken aenv (x, Operands a)  y
+        -> TreeToken aenv (x, Operands a) (y, Operands a)
 
 
--- | Utility for TreeTokenContent: Gives proof that
+-- | Utility for TreeToken: Gives proof that
 -- allows you to recursively consume scan/fold much
 -- easier.
 data TreeRefl b c = forall d. TreeRefl (c :~: (d, b))
-mkRefl :: TreeTokenContent aenv (a, b) c -> TreeRefl b c
+mkRefl :: TreeToken aenv (a, b) c -> TreeRefl b c
 mkRefl Skip {} = TreeRefl Refl
 mkRefl ScanT{} = TreeRefl Refl
 mkRefl FoldT{} = TreeRefl Refl
@@ -81,10 +79,10 @@ data (:>) big small where
 
 
 -- | Describes tuplists. Avoid adding `IsTupList` constraints to everything,
--- instead use `mkProof` and `mkProof'`. 
+-- instead use `mkProof` and `mkProof'`.
 class IsTupList a where
   tupListProof :: Either (a :~: ()) (TupListProof a)
-  
+
   identityW :: a :> a
   emptyW :: a :> ()
 
@@ -116,13 +114,16 @@ mkProof' End      = P Refl
 mkProof' (Keep w) = case mkProof' w of P Refl -> P Refl
 mkProof' (Toss w) = case mkProof' w of P Refl -> P Refl
 
-mkProofT :: TreeTokenContent aenv a b -> IsTupListProof a
+
+---- not currently needed ----
+
+mkProofT :: TreeToken aenv a b -> IsTupListProof a
 mkProofT Leaf             = P Refl
 mkProofT (Skip          t) = case mkProofT t of P Refl -> P Refl
 mkProofT (ScanT _ _ _ _ t) = case mkProofT t of P Refl -> P Refl
 mkProofT (FoldT _ _ _   t) = case mkProofT t of P Refl -> P Refl
 
-mkProofT' :: TreeTokenContent aenv a b -> IsTupListProof b
+mkProofT' :: TreeToken aenv a b -> IsTupListProof b
 mkProofT' Leaf              = P Refl
 mkProofT' (Skip          t) = case mkProofT' t of P Refl -> P Refl
 mkProofT' (ScanT _ _ _ _ t) = case mkProofT' t of P Refl -> P Refl
