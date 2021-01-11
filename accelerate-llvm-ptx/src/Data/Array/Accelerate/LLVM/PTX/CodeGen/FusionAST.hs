@@ -13,7 +13,7 @@ import Data.Array.Accelerate.LLVM.CodeGen.IR
 import Data.Array.Accelerate.LLVM.CodeGen.Sugar
 import Data.Type.Equality
 
-
+-- TODO: keep track of required memory size in basetokens
 data Fused t aenv i o where
   -- | Semicolon or cons: puts a single token in front of the list.
   Sequence   :: Fused TOKEN aenv a b -> Fused FUSED aenv b c -> Fused FUSED aenv a c
@@ -31,6 +31,14 @@ data Fused t aenv i o where
 data TOKEN
 data FUSED
 type FusedAcc = Fused FUSED
+
+
+
+-- | Defunctionalised weakening for tuplists.
+data (:>) big small where
+  End  ::           ()     :> ()
+  Toss :: b :> s -> (b, x) :>  s
+  Keep :: b :> s -> (b, x) :> (s, x)
 
 
 
@@ -71,12 +79,6 @@ mkRefl FoldT{} = TreeRefl Refl
 
 
 
--- | Defunctionalised weakening for tuplists.
-data (:>) big small where
-  End  ::           ()     :> ()
-  Toss :: b :> s -> (b, x) :>  s
-  Keep :: b :> s -> (b, x) :> (s, x)
-
 
 -- | Describes tuplists. Avoid adding `IsTupList` constraints to everything,
 -- instead use `mkProof` and `mkProof'`.
@@ -84,7 +86,7 @@ class IsTupList a where
   tupListProof :: Either (a :~: ()) (TupListProof a)
 
   identityW :: a :> a
-  emptyW :: a :> ()
+  emptyW    :: a :> ()
 
 instance IsTupList () where
   tupListProof = Left Refl
