@@ -46,7 +46,7 @@ module Data.Array.Accelerate.LLVM.PTX.CodeGen.Base (
 
   -- Kernel definitions
   (+++),
-  makeOpenAcc, makeOpenAccWith,
+  makeOpenAcc, makeOpenAccWith, makeKernel
 
 ) where
 

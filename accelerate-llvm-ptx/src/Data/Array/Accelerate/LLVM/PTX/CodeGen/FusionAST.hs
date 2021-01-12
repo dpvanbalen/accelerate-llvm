@@ -13,7 +13,7 @@ import Data.Array.Accelerate.LLVM.CodeGen.IR
 import Data.Array.Accelerate.LLVM.CodeGen.Sugar
 import Data.Type.Equality
 
--- TODO: keep track of required memory size in basetokens
+
 data Fused t aenv i o where
   -- | Semicolon or cons: puts a single token in front of the list.
   Sequence   :: Fused TOKEN aenv a b -> Fused FUSED aenv b c -> Fused FUSED aenv a c
@@ -22,6 +22,7 @@ data Fused t aenv i o where
   EndOfFused :: o :> o'                                      -> Fused FUSED aenv o o'
 
   -- | Some LLVM, representing non-tree things. Produces a single result on top of the tuplist.
+  -- These don't use shared memory, so we can compose them easily.
   BaseToken  :: IsTupList i => (i -> CodeGen PTX o)          -> Fused TOKEN aenv i (i, o)
 
   -- | Any number of folds and scans that get loop-fused (horizontally).

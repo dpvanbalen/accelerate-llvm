@@ -35,16 +35,17 @@ import Data.Array.Accelerate.LLVM.CodeGen.Array
 import Data.Array.Accelerate.Representation.Array
 import Data.Array.Accelerate.Representation.Elt
 import Data.Array.Accelerate.LLVM.CodeGen.Loop
+import Control.Monad.State (gets)
 
 
 
 
+compileTreeToken :: TreeToken aenv i o -> i -> CodeGen PTX o
+compileTreeToken token x = do
+  dev <- liftCodeGen $ gets ptxDeviceProperties
+  treeBlock dev token (Left x)
 
 
-
-
-compileTreeToken :: TreeToken aenv ins outs -> ins -> CodeGen PTX outs
-compileTreeToken = undefined
 
 
 
@@ -70,7 +71,7 @@ treeBlock dev token = warpTree >=> warpAggregates
       -- Allocate #warps elements of shared memory for each scan/fold
       bd       <- blockDim
       warps    <- A.quot integralType bd (int32 (CUDA.warpSize dev))
-      treesmem <- goAllocate warps (liftInt32 0) token 
+      treesmem <- goAllocate warps token 
 
       -- Share aggregates
       wid   <- warpId
@@ -85,8 +86,9 @@ treeBlock dev token = warpTree >=> warpAggregates
       goFinish tid wid warps token input treesmem
 
 
-    goAllocate :: Operands Int32 -> Operands Int32 -> TreeToken aenv i o -> CodeGen PTX (TreeSmem o)
-    goAllocate warps = go
+    goAllocate :: Operands Int32 -> TreeToken aenv i o -> CodeGen PTX (TreeSmem o)
+    goAllocate warps =   -- We can start with 0 here, because it's okay to alias shared
+        go (liftInt32 0) -- memory with TreeTokens that get evaluated before or after this one.
       where go :: forall env a b. Operands Int32 -> TreeToken env a b -> CodeGen PTX (TreeSmem b)
             go _ Leaf = return EmptySmem
             go skip (Skip t) = NothingSmem <$> go skip t

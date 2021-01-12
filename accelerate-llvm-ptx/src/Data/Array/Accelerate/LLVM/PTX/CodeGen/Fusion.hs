@@ -1,6 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GADTs #-}
 module Data.Array.Accelerate.LLVM.PTX.CodeGen.Fusion
   ( codegenFused
@@ -14,11 +15,45 @@ import Data.Array.Accelerate.LLVM.PTX.Target
 import Data.Array.Accelerate.LLVM.PTX.CodeGen.FusionAST
 import Data.Array.Accelerate.LLVM.PTX.CodeGen.Tree
 import Data.Type.Equality
+import Data.Array.Accelerate.LLVM.PTX.CodeGen.Base (makeKernel)
+import qualified Foreign.CUDA.Analysis as CUDA
+import Foreign.CUDA.Analysis.Device
+import Data.Array.Accelerate.LLVM.CodeGen.Environment
+import Data.Array.Accelerate.LLVM.PTX.Analysis.Launch
+import Data.Array.Accelerate.LLVM.CodeGen.Module
+import Data.Array.Accelerate.LLVM.CodeGen.Base
+import Data.Array.Accelerate.Representation.Elt (bytesElt)
+import Prelude as P
 
 ----- codegen ----
 
-codegenFused :: Fused t aenv i o -> i -> CodeGen PTX ()
-codegenFused f i = compile f i $ const return_
+-- some conversion between array types, maybe?
+data Foo i
+
+codegenFused :: DeviceProperties -> Gamma aenv -> Fused t aenv i o -> Foo i -> CodeGen PTX (Kernel PTX aenv o)
+codegenFused dev aenv fused i = 
+  let (params, arrs) = undefined i -- TODO: see what kind of input this function should have, match 'Foo' and this undefined to it.
+      paramEnv = envParam aenv
+
+      config = launchConfig dev (CUDA.incWarp dev) smem 
+                _ _ -- no idea: some functions use 'const', others 'multipleOf'
+        where
+          -- required shared memory (in bytes) as a function of threadblock size
+          smem :: Int -> Int
+          smem n = (n `P.quot` CUDA.warpSize dev) * go fused
+          -- big version of `bytesElt`: we only need 1 treetoken in memory at a time
+          go :: forall t env a b. Fused t env a b -> Int
+          go (EndOfFused _) = 0
+          go (BaseToken _) = 0 -- does not require shared memory
+          go (Sequence x y) = max (go x) (go y)
+          go (TreeToken Leaf) = 0
+          go (TreeToken (Skip t)) = go (TreeToken t)
+          go (TreeToken (ScanT tp _ _ _ t)) = bytesElt tp + go (TreeToken t)
+          go (TreeToken (FoldT tp _ _   t)) = bytesElt tp + go (TreeToken t)
+  in  
+  makeKernel config "fusedKernelName" (params ++ paramEnv) $ do
+  compile fused arrs _ -- TODO write the results into the output arrays: quite important
+
 
 
 compile :: Fused t aenv i o -> i -> (o -> CodeGen PTX ()) -> CodeGen PTX ()
