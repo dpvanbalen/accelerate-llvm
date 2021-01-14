@@ -121,11 +121,12 @@ treeBlock dev token = warpTree >=> warpAggregates
                 writeArray TypeInt32 smem wid x
               go t env tree
             -- These cases should never occur, see 'goAllocate' above.
-            go (Skip _) _ (ConsSmem _ _) = error "goWriteAggregates: shared memory allocated for Skipped node"
+            go (Skip _) _ (ConsSmem _ _) = error "goWriteAggregates:    shared memory allocated for Skipped node"
             go _ _ (NothingSmem _)       = error "goWriteAggregates: no shared memory allocated for Scan/Fold node"
 
 
     -- Performs the scans and folds on the aggregates.
+    -- TODO: use the initial elements! 
     goFinish :: Operands Int32 -> Operands Int32 -> Operands Int32 -> TreeToken aenv i o -> o -> TreeSmem o -> CodeGen PTX o
     goFinish tid wid warps = go
       where go :: forall env a b. TreeToken env  a b -> b -> TreeSmem b -> CodeGen PTX b
@@ -175,7 +176,7 @@ treeBlock dev token = warpTree >=> warpAggregates
               (,output) <$> go t env tree
 
             -- These cases should never occur, see 'goAllocate' above.
-            go (Skip _) _ (ConsSmem _ _) = error "goWriteAggregates: shared memory allocated for Skipped node"
+            go (Skip _) _ (ConsSmem _ _) = error "goWriteAggregates:    shared memory allocated for Skipped node"
             go _ _ (NothingSmem _)       = error "goWriteAggregates: no shared memory allocated for Scan/Fold node"
 
 

@@ -25,6 +25,47 @@ import Data.Array.Accelerate.LLVM.CodeGen.Base
 import Data.Array.Accelerate.Representation.Elt (bytesElt)
 import Prelude as P
 
+
+-- test --
+-- import Data.Array.Accelerate.LLVM.CodeGen.IR (Operands)
+-- import Data.Array.Accelerate.Type
+-- import Data.Array.Accelerate.Representation.Type
+-- import Data.Array.Accelerate.LLVM.CodeGen.Sugar
+-- import qualified Data.Array.Accelerate.LLVM.CodeGen.Arithmetic as A
+-- import Data.Array.Accelerate.AST (Direction(..))
+
+-- test = case testinput of
+--   HorizontalOutput fused wFold wScan ->
+--     let x = codegenFused _ mempty fused _ in _
+
+-- testinput :: HorizontalOutput () ((), Operands Int32) ((), Operands Int32) ((), Operands Int32)
+-- testinput = case horizontal (toList aFold) (toList aScan) of
+--   HorizontalOutput fused wFold wScan -> 
+--     HorizontalOutput (vertical (toList aMap) fused) wFold wScan
+
+
+-- toList :: IsTupList o => Fused TOKEN () i (o, x) -> FusedAcc () i ((), x)
+-- toList token = Sequence token $ EndOfFused (Keep emptyW)
+
+-- aFold :: Fused TOKEN () ((), Operands Int32) (((), Operands Int32), Operands Int32) 
+-- aFold = TreeToken $ FoldT (TupRsingle scalarType) 
+--                           (IRFun2 $ A.add numType) (Just $ A.liftInt32 10) (Skip Leaf)
+
+
+-- aScan :: Fused TOKEN () ((), Operands Int32) (((), Operands Int32), Operands Int32) 
+-- aScan = TreeToken $ ScanT (TupRsingle scalarType) 
+--                           (IRFun2 $ A.mul numType) (Just $ A.liftInt32 3) LeftToRight (Skip Leaf)
+
+-- aMap ::  Fused TOKEN () ((), Operands Int32) (((), Operands Int32), Operands Int32) 
+-- aMap = BaseToken $ \((), x) -> A.mul numType (A.liftInt32 5) x
+
+-- /test --
+
+
+
+
+
+
 ----- codegen ----
 
 -- some conversion between array types, maybe?
@@ -36,18 +77,27 @@ codegenFused dev aenv fused i =
       paramEnv = envParam aenv
 
       config = launchConfig dev (CUDA.incWarp dev) smem 
-                _ _ -- no idea: some functions use 'const', others 'multipleOf'
+                _ _ -- no idea: some functions use 'const', others 'multipleOf', others "\_ _ -> 1"
+                    -- all functions seem to put the same in the Q version as in the normal version
+                    -- \arraySize threadBlockSize -> gridSize
+                    -- I think gridSize = number of threadblocks.. so `const` just makes very many of them?
+                    -- Is that not super inefficient?
+                    -- 'multipleOf' makes sense, and \_ _ -> 1 is for ones that need to be done by 1 threadblock.
+                    -- if this is all correct, then we'd want a variation on multipleOf which takes a list of input
+                    -- sizes, computes the max, then does 'multipleOf' with that and the threadblocksize.
         where
-          -- required shared memory (in bytes) as a function of threadblock size
+          -- required shared memory (in bytes) as a function of threadblock size: only for tree aggregates
           smem :: Int -> Int
           smem n = (n `P.quot` CUDA.warpSize dev) * go fused
           -- big version of `bytesElt`: we only need 1 treetoken in memory at a time
           go :: forall t env a b. Fused t env a b -> Int
+          go (Sequence x y) = max (go x) (go y) -- they can alias
           go (EndOfFused _) = 0
+          
           go (BaseToken _) = 0 -- does not require shared memory
-          go (Sequence x y) = max (go x) (go y)
+
           go (TreeToken Leaf) = 0
-          go (TreeToken (Skip t)) = go (TreeToken t)
+          go (TreeToken (Skip           t)) =               go (TreeToken t)
           go (TreeToken (ScanT tp _ _ _ t)) = bytesElt tp + go (TreeToken t)
           go (TreeToken (FoldT tp _ _   t)) = bytesElt tp + go (TreeToken t)
   in  

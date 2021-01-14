@@ -27,7 +27,7 @@ data Fused t aenv i o where
 
   -- | Any number of folds and scans that get loop-fused (horizontally).
   -- Produces many results, and TreeToken innately has weakening.
-  TreeToken  :: TreeToken aenv i o                    -> Fused TOKEN aenv i o
+  TreeToken  :: TreeToken aenv i o                           -> Fused TOKEN aenv i o
 
 data TOKEN
 data FUSED
@@ -51,6 +51,10 @@ data (:>) big small where
 --   vertical loop fusion of trees is not possible,
 --   vertical kernel fusion is done by sequencing tree tokens
 
+-- TODO perhaps, we should remove the initial elements from the trees
+-- and instead make separate `kernels` (which will compile to BaseTokens
+-- that are fusible with the corresponding treetokens) that (add an element
+-- and) map the combination with the treetoken over the result
 data TreeToken aenv i o where
   Leaf  :: TreeToken aenv ()      ()
 
