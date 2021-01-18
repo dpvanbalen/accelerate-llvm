@@ -3,17 +3,18 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GADTs #-}
-module Data.Array.Accelerate.LLVM.PTX.CodeGen.Fusion
+module Data.Array.Accelerate.LLVM.PTX.Fusion.FusionCodeGen
   ( codegenFused
   , horizontal
   , vertical
   , diagonal
+  , test
   ) where
 
 import Data.Array.Accelerate.LLVM.CodeGen.Monad
 import Data.Array.Accelerate.LLVM.PTX.Target
-import Data.Array.Accelerate.LLVM.PTX.CodeGen.FusionAST
-import Data.Array.Accelerate.LLVM.PTX.CodeGen.Tree
+import Data.Array.Accelerate.LLVM.PTX.Fusion.FusionAST
+import Data.Array.Accelerate.LLVM.PTX.Fusion.TreeCodeGen
 import Data.Type.Equality
 import Data.Array.Accelerate.LLVM.PTX.CodeGen.Base (makeKernel)
 import qualified Foreign.CUDA.Analysis as CUDA
@@ -27,37 +28,40 @@ import Prelude as P
 
 
 -- test --
--- import Data.Array.Accelerate.LLVM.CodeGen.IR (Operands)
--- import Data.Array.Accelerate.Type
--- import Data.Array.Accelerate.Representation.Type
--- import Data.Array.Accelerate.LLVM.CodeGen.Sugar
--- import qualified Data.Array.Accelerate.LLVM.CodeGen.Arithmetic as A
--- import Data.Array.Accelerate.AST (Direction(..))
+import Data.Array.Accelerate.LLVM.CodeGen.IR (Operands)
+import Data.Array.Accelerate.Type
+import Data.Array.Accelerate.Representation.Type
+import Data.Array.Accelerate.LLVM.CodeGen.Sugar
+import qualified Data.Array.Accelerate.LLVM.CodeGen.Arithmetic as A
+import Data.Array.Accelerate.AST (Direction(..))
+import Control.Monad.State (gets)
 
--- test = case testinput of
---   HorizontalOutput fused wFold wScan ->
---     let x = codegenFused _ mempty fused _ in _
+test :: CodeGen PTX ()
+test = case testinput of
+  HorizontalOutput fused wFold wScan -> do
+    dev <- liftCodeGen $ gets ptxDeviceProperties
+    let _ = codegenFused dev mempty fused undefined in return ()
 
--- testinput :: HorizontalOutput () ((), Operands Int32) ((), Operands Int32) ((), Operands Int32)
--- testinput = case horizontal (toList aFold) (toList aScan) of
---   HorizontalOutput fused wFold wScan -> 
---     HorizontalOutput (vertical (toList aMap) fused) wFold wScan
-
-
--- toList :: IsTupList o => Fused TOKEN () i (o, x) -> FusedAcc () i ((), x)
--- toList token = Sequence token $ EndOfFused (Keep emptyW)
-
--- aFold :: Fused TOKEN () ((), Operands Int32) (((), Operands Int32), Operands Int32) 
--- aFold = TreeToken $ FoldT (TupRsingle scalarType) 
---                           (IRFun2 $ A.add numType) (Just $ A.liftInt32 10) (Skip Leaf)
+testinput :: HorizontalOutput () ((), Operands Int32) ((), Operands Int32) ((), Operands Int32)
+testinput = case horizontal (toList aFold) (toList aScan) of
+  HorizontalOutput fused wFold wScan -> 
+    HorizontalOutput (vertical (toList aMap) fused) wFold wScan
 
 
--- aScan :: Fused TOKEN () ((), Operands Int32) (((), Operands Int32), Operands Int32) 
--- aScan = TreeToken $ ScanT (TupRsingle scalarType) 
---                           (IRFun2 $ A.mul numType) (Just $ A.liftInt32 3) LeftToRight (Skip Leaf)
+toList :: IsTupList o => Fused TOKEN () i (o, x) -> FusedAcc () i ((), x)
+toList token = Sequence token $ EndOfFused (Keep emptyW)
 
--- aMap ::  Fused TOKEN () ((), Operands Int32) (((), Operands Int32), Operands Int32) 
--- aMap = BaseToken $ \((), x) -> A.mul numType (A.liftInt32 5) x
+aFold :: Fused TOKEN () ((), Operands Int32) (((), Operands Int32), Operands Int32) 
+aFold = TreeToken $ FoldT (TupRsingle scalarType) 
+                          (IRFun2 $ A.add numType) (Just $ A.liftInt32 10) (Skip Leaf)
+
+
+aScan :: Fused TOKEN () ((), Operands Int32) (((), Operands Int32), Operands Int32) 
+aScan = TreeToken $ ScanT (TupRsingle scalarType) 
+                          (IRFun2 $ A.mul numType) (Just $ A.liftInt32 3) LeftToRight (Skip Leaf)
+
+aMap ::  Fused TOKEN () ((), Operands Int32) (((), Operands Int32), Operands Int32) 
+aMap = BaseToken $ \((), x) -> A.mul numType (A.liftInt32 5) x
 
 -- /test --
 
@@ -77,7 +81,8 @@ codegenFused dev aenv fused i =
       paramEnv = envParam aenv
 
       config = launchConfig dev (CUDA.incWarp dev) smem 
-                _ _ -- no idea: some functions use 'const', others 'multipleOf', others "\_ _ -> 1"
+                undefined undefined 
+                    -- no idea: some functions use 'const', others 'multipleOf' (others "\_ _ -> 1")
                     -- all functions seem to put the same in the Q version as in the normal version
                     -- \arraySize threadBlockSize -> gridSize
                     -- I think gridSize = number of threadblocks.. so `const` just makes very many of them?
@@ -85,6 +90,26 @@ codegenFused dev aenv fused i =
                     -- 'multipleOf' makes sense, and \_ _ -> 1 is for ones that need to be done by 1 threadblock.
                     -- if this is all correct, then we'd want a variation on multipleOf which takes a list of input
                     -- sizes, computes the max, then does 'multipleOf' with that and the threadblocksize.
+                    -- update: in 'launchConfig', the gridsize is capped anyway. Testing confirms that replacing 'const'
+                    -- with 'multipleOf' doesn't lead to errors, couldn't benchmark it yet. Problem remains: this
+                    -- is all built around the assumption that each kernel has 1 'input size', which fusion can mess with.
+
+                    -- Concrete choice here is not too dangerous: experimenting with the choices in Fold shows that 
+                    -- all choices work, but for some reason `const` performs better than `multipleOf` (can't figure out
+                    -- why that is the case.. It does seem silly, as `multipleOf` already makes enough blocks for the outer
+                    -- loop to only run once, I think). Will just have to experiment to find the best value here.
+                    
+                    -- TODO: theoreticise about this, should we only fuse things with equal input size?
+                    -- concrete implications: vertical fusion AFTER a fold is irrelevant, we probably just map the function on all results 
+                    --                                         (even though we only need the first)
+                    --                        vertical fusion AFTER a foldDim is relevant: we then really want to only consider the result
+                    --                        vertical fusion AFTER an exclusive scan means the size increases by 1, this seems very relevant
+                    --                                         currently, for exclusive scans the input size is already incremented
+                    --                                         we'll have to see if it's easier/better to do this, or to just map
+                    --                                         the initial element over the input and add it after the scan?
+                    --                                         that would result in slightly more `work`, but potentially less shuffling
+                    --                                         of indices (shuffling would hinder scan/fold and scan/scan1 horizontal fusion).
+                    -- in general, it makes sense not to fuse e.g. two maps horizontally if they have independant sizes, probably.
         where
           -- required shared memory (in bytes) as a function of threadblock size: only for tree aggregates
           smem :: Int -> Int
@@ -102,7 +127,8 @@ codegenFused dev aenv fused i =
           go (TreeToken (FoldT tp _ _   t)) = bytesElt tp + go (TreeToken t)
   in  
   makeKernel config "fusedKernelName" (params ++ paramEnv) $ do
-  compile fused arrs _ -- TODO write the results into the output arrays: quite important
+  compile fused arrs
+    undefined -- TODO write the results into the output arrays: quite important!
 
 
 

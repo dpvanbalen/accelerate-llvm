@@ -27,7 +27,7 @@ module Data.Array.Accelerate.LLVM.PTX.Execute (
 ) where
 
 
-import Data.Array.Accelerate.LLVM.PTX.CodeGen.Fusion
+import Data.Array.Accelerate.LLVM.PTX.Fusion.FusionCodeGen
 
 import Data.Array.Accelerate.Analysis.Match
 import Data.Array.Accelerate.Error

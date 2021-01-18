@@ -6,9 +6,9 @@
 
 -- | Code generation for fused scans and folds
 
-module Data.Array.Accelerate.LLVM.PTX.CodeGen.Tree where
+module Data.Array.Accelerate.LLVM.PTX.Fusion.TreeCodeGen where
 
-import Data.Array.Accelerate.LLVM.PTX.CodeGen.FusionAST
+import Data.Array.Accelerate.LLVM.PTX.Fusion.FusionAST
 
 
 

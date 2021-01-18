@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GADTs #-}
-module Data.Array.Accelerate.LLVM.PTX.CodeGen.FusionAST where
+module Data.Array.Accelerate.LLVM.PTX.Fusion.FusionAST where
 
 
 import Data.Array.Accelerate.LLVM.CodeGen.Monad
