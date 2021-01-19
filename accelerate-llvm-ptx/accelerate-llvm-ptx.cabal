@@ -115,6 +115,7 @@ Library
     Data.Array.Accelerate.LLVM.PTX.Compile.Libdevice.Load
     Data.Array.Accelerate.LLVM.PTX.Compile.Libdevice.TH
 
+    Data.Array.Accelerate.LLVM.PTX.Fusion
     Data.Array.Accelerate.LLVM.PTX.Fusion.FusionAST
     Data.Array.Accelerate.LLVM.PTX.Fusion.FusionCodeGen
     Data.Array.Accelerate.LLVM.PTX.Fusion.TreeCodeGen
