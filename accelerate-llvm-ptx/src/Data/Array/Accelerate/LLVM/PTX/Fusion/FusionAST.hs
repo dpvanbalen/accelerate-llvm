@@ -7,13 +7,12 @@ module Data.Array.Accelerate.LLVM.PTX.Fusion.FusionAST where
 
 import Data.Array.Accelerate.LLVM.CodeGen.Monad
 import Data.Array.Accelerate.LLVM.PTX.Target
-import Data.Type.Equality
+
 
 data FusedAcc aenv i o where
   Leaf :: (i -> CodeGen PTX o) -> FusedAcc aenv i o
 
-  Branch :: (IsTupList li, IsTupList lo, IsTupList ri, IsTupList ro, IsTupList ti, IsTupList to)
-         => Combine       li lo ri ro ti to
+  Branch :: Combine       li lo ri ro ti to
          -> FusedAcc aenv li lo
          -> FusedAcc aenv       ri ro
          -> FusedAcc aenv             ti to
@@ -23,42 +22,6 @@ data (:>) big small where
   End  ::           ()     :> ()
   Toss :: b :> s -> (b, x) :>  s
   Keep :: b :> s -> (b, x) :> (s, x)
-
-
--- | Describes tuplists. 
--- I like to avoid adding `IsTupList` constraints to everything,
--- and instead use `mkProof` and `mkProof'`.
-class IsTupList a where
-  tupListProof :: Either (a :~: ()) (TupListProof a)
-
-  -- The trivial and vacuus weakenings
-  identityW :: a :> a
-  emptyW    :: a :> ()
-
-instance IsTupList () where
-  tupListProof = Left Refl
-  identityW = End
-  emptyW = End
-
-instance IsTupList y => IsTupList (y, x) where
-  tupListProof = Right $ TupListProof Refl
-  identityW = Keep identityW
-  emptyW = Toss emptyW
-
-data TupListProof a = forall b x. TupListProof (IsTupList b => (a :~: (b, x)))
-
-
-data IsTupListProof a = forall b. IsTupList b => P (a :~: b)
-
-mkProof :: a :> b -> IsTupListProof a
-mkProof End      = P Refl
-mkProof (Keep w) = case mkProof w of P Refl -> P Refl
-mkProof (Toss w) = case mkProof w of P Refl -> P Refl
-
-mkProof' :: a :> b -> IsTupListProof b
-mkProof' End      = P Refl
-mkProof' (Keep w) = case mkProof' w of P Refl -> P Refl
-mkProof' (Toss w) = case mkProof' w of P Refl -> P Refl
 
 
 -- `a` is always an "Operands x" here

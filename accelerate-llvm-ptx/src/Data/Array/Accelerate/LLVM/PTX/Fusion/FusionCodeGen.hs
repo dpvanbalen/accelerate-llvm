@@ -12,7 +12,6 @@ import Data.Array.Accelerate.LLVM.CodeGen.Monad
 import Data.Array.Accelerate.LLVM.PTX.Target
 import Data.Array.Accelerate.LLVM.PTX.Fusion.FusionAST
 -- import Data.Array.Accelerate.LLVM.PTX.Fusion.TreeCodeGen
-import Data.Type.Equality
 
 
 
@@ -30,9 +29,9 @@ compile (Branch c l r) totalIn = do
 
 -- | Applying a weakening on a tuplist
 -- (could just as easily write an equivalent for `Data.Array.Accelerate.AST.Environment.Val`)
-($:>) :: (IsTupList a, IsTupList b) => (a :> b) -> (a -> b)
+($:>) :: (a :> b) -> (a -> b)
 End      $:> ()     = ()
-(Toss w) $:> (y, _) = case (mkProof w, mkProof' w) of (P Refl, P Refl) ->  w $:> y
-(Keep w) $:> (y, x) = case (mkProof w, mkProof' w) of (P Refl, P Refl) -> (w $:> y, x)
+(Toss w) $:> (y, _) =  w $:> y
+(Keep w) $:> (y, x) = (w $:> y, x)
 
 
