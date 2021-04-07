@@ -110,9 +110,9 @@ lowerCombine (WeakLeft   c) = _
 lowerCombine (WeakRight  c) = _
 
 type family ToIn  a where
-  ToIn ()              = ()
-  ToIn (In sh e  -> x) = (ToIn x, e)
-  ToIn (Out sh e -> x) =  ToIn x
+  ToIn  ()              = ()
+  ToIn  (In sh e  -> x) = (ToIn x, e)
+  ToIn  (Out sh e -> x) =  ToIn x
 type family ToOut a where
   ToOut ()              = ()
   ToOut (In sh e  -> x) =  ToOut x

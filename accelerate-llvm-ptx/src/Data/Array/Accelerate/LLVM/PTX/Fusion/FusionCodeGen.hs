@@ -23,6 +23,9 @@ compile (Leaf f) i = f i
 compile (Branch c l r) totalIn = do
   -- Within a kernel, we don't perform any loop-fusion anymore: this simply uses the 'leftI, rightI, totalO' combinators
   -- to thread the CodeGen state through the sub-branches.
+  -- TODO: not doing loop fusion means we do some excess synchronisations (between warp-level and block-level scans/folds).
+  -- A middleground would be to split each fold/scan into two 'black boxes' (before and after sync), and interleave those
+  -- where possible (i.e. if there is no vertical dependancy)
   let leftIn = leftI c $:> totalIn
   leftOut <- compile l leftIn
   let rightIn = rightI c leftOut totalIn
