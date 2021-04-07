@@ -4,7 +4,8 @@
 -- {-# LANGUAGE ScopedTypeVariables #-}
 -- {-# LANGUAGE TypeOperators       #-}
 
--- -- | Code generation for fused scans and folds
+-- -- | Code generation for fused scans and folds. This module can be greatly simplified for the current approach, 
+-- -- which does not do loop fusion for these scans/folds. 
 
 -- module Data.Array.Accelerate.LLVM.PTX.Fusion.TreeCodeGen where
 
