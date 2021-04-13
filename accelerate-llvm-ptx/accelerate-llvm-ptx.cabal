@@ -119,6 +119,8 @@ Library
     Data.Array.Accelerate.LLVM.PTX.Fusion.FusionAST
     Data.Array.Accelerate.LLVM.PTX.Fusion.FusionCodeGen
     Data.Array.Accelerate.LLVM.PTX.Fusion.TreeCodeGen
+    Data.Array.Accelerate.LLVM.PTX.AST
+    Data.Array.Accelerate.LLVM.PTX.StuffFromAccNewPipeline
 
     Data.Array.Accelerate.LLVM.PTX.Link
     Data.Array.Accelerate.LLVM.PTX.Link.Cache
