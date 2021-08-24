@@ -36,7 +36,7 @@ compile (Branch c l r) totalIn = do
 -- | Applying a weakening on a tuplist
 -- (could just as easily write an equivalent for `Data.Array.Accelerate.AST.Environment.Val`)
 ($:>) :: (a :> b) -> (a -> b)
-End      $:> ()     = ()
+End      $:> x     = x
 (Toss w) $:> (y, _) =  w $:> y
 (Keep w) $:> (y, x) = (w $:> y, x)
 
