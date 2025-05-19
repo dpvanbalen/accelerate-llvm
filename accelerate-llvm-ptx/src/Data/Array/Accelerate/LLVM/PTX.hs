@@ -57,7 +57,7 @@
 -- does not always imply that \(1-n\) device resources are available.
 
 module Data.Array.Accelerate.LLVM.PTX (
-
+{-
   Acc, Arrays,
   Afunction, AfunctionR,
 
@@ -84,10 +84,14 @@ module Data.Array.Accelerate.LLVM.PTX (
 
   -- * Controlling host-side allocation
   registerPinnedAllocatorWith,
-
+-}
+  PTXOp, PTXKernel
 ) where
 
-import Data.Array.Accelerate.AST                                    ( PreOpenAfun(..), arraysR, liftALeftHandSide )
+import Data.Array.Accelerate.LLVM.PTX.Operation
+import Data.Array.Accelerate.LLVM.PTX.Kernel
+
+{- import Data.Array.Accelerate.AST                                    ( PreOpenAfun(..), arraysR, liftALeftHandSide )
 import Data.Array.Accelerate.AST.LeftHandSide                       ( lhsToTupR )
 import Data.Array.Accelerate.Array.Buffer
 import Data.Array.Accelerate.Async                                  ( Async, asyncBound, wait, poll, cancel )
@@ -560,3 +564,4 @@ registerPinnedAllocatorWith target =
 dumpStats :: MonadIO m => a -> m a
 dumpStats x = liftIO dumpSimplStats >> return x
 
+-}
