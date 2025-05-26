@@ -2,11 +2,13 @@ packages:
     accelerate-llvm
     accelerate-llvm-native
     accelerate-llvm-ptx
+    ../accelerate
+    ../haskell-MIP/MIP
 
-source-repository-package
-    type:     git
-    location: https://github.com/AccelerateHS/accelerate.git
-    tag:      405affe705d8f52e1c3e8dbf764f6524b7d1f896
+--source-repository-package
+--    type:     git
+--    location: https://github.com/AccelerateHS/accelerate.git
+--    tag:      405affe705d8f52e1c3e8dbf764f6524b7d1f896
     -- Required for Cabal < 3.8
     -- post-checkout-command: bash -c "! git submodule update --init --recursive"
 
@@ -19,3 +21,5 @@ source-repository-package
     type:     git
     location: https://github.com/tomsmeding/cuda.git
     tag:      26083f0d000076d3bba6c462952820ccad318c65
+
+test-show-details: direct

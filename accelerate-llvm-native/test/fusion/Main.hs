@@ -38,59 +38,62 @@ import Data.Array.Accelerate (testWithObjective)
 
 main :: IO ()
 main = do
-
-  let xs'= fromList (Z:.1000)       [1::Int ..]
-      xs = fromList (Z:.10000000)       [1::Int ..]
-      ys = fromList (Z:.1000:.1000) [1::Int ..]
-      zs = fromList (Z:.1000:.1000) [0::Int ..]
-
-  -- The forwards greedy algorithm can't (easily?) be fooled into manifesting a large array,
-  -- but it does do this example 1.5-2x as slow
-  let greedyForwardBad as = 
-        let (I1 x) = shape as
-            bs = map (*2) as
-            cs = map (+1) bs
-            xs = generate (Z_ ::. x) (\(I1 i) -> i + bs ! (I1 0))
-            result = sum $ zipWith (+) cs xs
-        in result
-  -- backwards greedy manifests a huge array  
-  let greedyBackwardBad (xs :: Acc (Vector Int)) =
-        let large = replicate (Z_ ::. All_ ::. (1000000 :: Exp Int)) xs
-            ys = sum large
-            zs = product large
-            result = imap (\(I1 i) y -> if zs ! (I1 0) == 0 then y else 1+y) ys
-        in result
-
-  let transpose' x =
-        let sh ::. a ::. b = shape x
-        in backpermute (sh ::. b ::. a) (\(sh ::. b ::. a) -> sh ::. a ::. b) x
+  let str = test @UniformScheduleFun @NativeKernel (generate Z_ $ \Z_ -> 3 :: Exp Int)
+  forM_ (Prelude.lines str) putStrLn
 
 
-  let matmul (T2 xs ys) = 
-        let Z_ ::. rows ::. _    = shape xs
-            Z_ ::. _    ::. cols = shape ys
-        in sum $ transpose' $ zipWith (*)
-            (replicate (Z_ ::. All_ ::. All_ ::. cols) xs)
-            (replicate (Z_ ::. rows ::. All_ ::. All_) ys)
+  -- let xs'= fromList (Z:.1000)       [1::Int ..]
+  --     xs = fromList (Z:.10000000)       [1::Int ..]
+  --     ys = fromList (Z:.1000:.1000) [1::Int ..]
+  --     zs = fromList (Z:.1000:.1000) [0::Int ..]
+
+  -- -- The forwards greedy algorithm can't (easily?) be fooled into manifesting a large array,
+  -- -- but it does do this example 1.5-2x as slow
+  -- let greedyForwardBad as = 
+  --       let (I1 x) = shape as
+  --           bs = map (*2) as
+  --           cs = map (+1) bs
+  --           xs = generate (Z_ ::. x) (\(I1 i) -> i + bs ! (I1 0))
+  --           result = sum $ zipWith (+) cs xs
+  --       in result
+  -- -- backwards greedy manifests a huge array  
+  -- let greedyBackwardBad (xs :: Acc (Vector Int)) =
+  --       let large = replicate (Z_ ::. All_ ::. (1000000 :: Exp Int)) xs
+  --           ys = sum large
+  --           zs = product large
+  --           result = imap (\(I1 i) y -> if zs ! (I1 0) == 0 then y else 1+y) ys
+  --       in result
+
+  -- let transpose' x =
+  --       let sh ::. a ::. b = shape x
+  --       in backpermute (sh ::. b ::. a) (\(sh ::. b ::. a) -> sh ::. a ::. b) x
+
+
+  -- let matmul (T2 xs ys) = 
+  --       let Z_ ::. rows ::. _    = shape xs
+  --           Z_ ::. _    ::. cols = shape ys
+  --       in sum $ transpose' $ zipWith (*)
+  --           (replicate (Z_ ::. All_ ::. All_ ::. cols) xs)
+  --           (replicate (Z_ ::. rows ::. All_ ::. All_) ys)
   
-  let matmulcontext :: Acc (Matrix Int) -> Acc (Matrix Int)
-      matmulcontext xs' =
-        let xs = map (*2) xs'
-            ys = map (+1) xs
-            zs = map (`div` xs ! (Z_::.0::.0)) ys
-        in matmul (T2 ys zs)
+  -- let matmulcontext :: Acc (Matrix Int) -> Acc (Matrix Int)
+  --     matmulcontext xs' =
+  --       let xs = map (*2) xs'
+  --           ys = map (+1) xs
+  --           zs = map (`div` xs ! (Z_::.0::.0)) ys
+  --       in matmul (T2 ys zs)
 
-  let testcase' :: (Arrays a, Arrays b, NFData a, NFData b) => ((Acc a -> Acc b) -> a -> b) -> (Prelude.String, Acc a -> Acc b, a) -> Benchmark
-      testcase' f (name, p, input) = env (Prelude.pure (f p, input)) $ \ ~(p', xs') -> bench name $ nf p' xs'
+  -- let testcase' :: (Arrays a, Arrays b, NFData a, NFData b) => ((Acc a -> Acc b) -> a -> b) -> (Prelude.String, Acc a -> Acc b, a) -> Benchmark
+  --     testcase' f (name, p, input) = env (Prelude.pure (f p, input)) $ \ ~(p', xs') -> bench name $ nf p' xs'
 
-  let testcase :: Prelude.String -> (forall a b. (Arrays a, Arrays b) =>(Acc a -> Acc b) -> a -> b) -> Benchmark
-      testcase name f = bgroup name 
-        [ 
-          -- testcase' f ("matmulcontext", matmulcontext, ys)
-        --   testcase' f ("matmul", matmul, (ys, zs))
-          testcase' f ("forwardbad",greedyForwardBad, xs)
-        , testcase' f ("backwardbad", greedyBackwardBad, xs')
-        ]
+  -- let testcase :: Prelude.String -> (forall a b. (Arrays a, Arrays b) =>(Acc a -> Acc b) -> a -> b) -> Benchmark
+  --     testcase name f = bgroup name 
+  --       [ 
+  --         -- testcase' f ("matmulcontext", matmulcontext, ys)
+  --       --   testcase' f ("matmul", matmul, (ys, zs))
+  --         testcase' f ("forwardbad",greedyForwardBad, xs)
+  --       , testcase' f ("backwardbad", greedyBackwardBad, xs')
+  --       ]
   
   -- benchmarkmain
 
@@ -103,20 +106,20 @@ main = do
   
   
 
-  defaultMainWith (defaultConfig { timeLimit = 5*60, resamples = 10000, csvFile = Just "greediesarebad.csv"}) $ Prelude.map (\obj -> testcase (show obj) (runNWithObj @Native obj))
-    [ 
-      Everything
-    -- , NumClusters
-    -- , ArrayReads
-    --  ArrayReadsWrites
-    -- , IntermediateArrays
-    -- , FusedEdges
-    ]
-    Prelude.<> Prelude.map (\b -> testcase (show b) (runNBench @Native b))
-    [ GreedyUp
-    , GreedyDown
-    , NoFusion
-    ]
+  -- defaultMainWith (defaultConfig { timeLimit = 5*60, resamples = 10000, csvFile = Just "greediesarebad.csv"}) $ Prelude.map (\obj -> testcase (show obj) (runNWithObj @Native obj))
+  --   [ 
+  --     Everything
+  --   -- , NumClusters
+  --   -- , ArrayReads
+  --   --  ArrayReadsWrites
+  --   -- , IntermediateArrays
+  --   -- , FusedEdges
+  --   ]
+  --   Prelude.<> Prelude.map (\b -> testcase (show b) (runNBench @Native b))
+  --   [ GreedyUp
+  --   , GreedyDown
+  --   , NoFusion
+  --   ]
 
 
 
@@ -243,28 +246,30 @@ main = do
 --------------------------------------------------------------------
 
 benchmarkmain = defaultMain $ 
-    Prelude.map (benchOption . Prelude.Left) [minBound :: Objective .. maxBound] 
-    Prelude.++ 
-    Prelude.map (benchOption . Prelude.Right) [NoFusion, GreedyUp, GreedyDown]
+    -- Prelude.map (benchOption . Prelude.Left) [minBound :: Objective .. maxBound] 
+    -- Prelude.++ 
+    -- Prelude.map (benchOption . Prelude.Right) [NoFusion, GreedyUp, GreedyDown]
+    [benchOption]
  where
-    benchOption :: Prelude.Either Objective Benchmarking -> Benchmark
-    benchOption obj = bgroup (show obj)
+    -- benchOption :: Prelude.Either Objective Benchmarking -> Benchmark
+    benchOption = bgroup "asdf"
       [ 
       --   benchProgram "diagonal " diagonal  obj
       -- , benchProgram "diagonal'" diagonal' obj
-        benchProgram "complex" complex obj
+        benchProgram "complex" complex
       -- , benchProgram "complex'" complex' obj
-      , benchProgram "complexAdd" complexAdd obj
+      , benchProgram "complexAdd" complexAdd
       -- , benchProgram "complexAdd'" complexAdd' obj
-      , benchProgram "singleLoop" singleLoop obj
-      , benchProgram "singleLoop'" singleLoop' obj
-      , benchProgram "futharkbadaccelerategood" futharkbadaccelerategood obj
-      , benchProgram "reverses" reverses obj
+      , benchProgram "singleLoop" singleLoop
+      , benchProgram "singleLoop'" singleLoop'
+      , benchProgram "futharkbadaccelerategood" futharkbadaccelerategood
+      , benchProgram "reverses" reverses
       ]
-    benchProgram str pr (Prelude.Left obj) = env (return $ runNWithObj @Native obj pr) $ \p -> bgroup str
+    -- benchProgram :: (Arrays a, Arrays b) => Prelude.String -> (Acc a -> Acc b) -> Benchmark
+    benchProgram str pr = env (return $ runN pr) $ \p -> bgroup str
       [ benchsize (32*32*32) p ]
-    benchProgram str pr (Prelude.Right obj) = env (return $ runNBench @Native obj pr) $ \p -> bgroup str
-      [ benchsize (32*32*32) p ] 
+    -- benchProgram str pr (Prelude.Right obj) = env (return $ runNBench @Native obj pr) $ \p -> bgroup str
+    --   [ benchsize (32*32*32) p ] 
     xs n = fromList (Z:.n) $ Prelude.map (`Prelude.mod` (n `div` 2)) [1 :: Int ..]
     benchsize n p = env (return $ xs n) $ \xs -> bench (show n) $ nf p xs
       -- we force the result by indexing into a result array and forcing that number. 

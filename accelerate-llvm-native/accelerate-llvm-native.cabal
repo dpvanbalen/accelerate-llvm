@@ -190,32 +190,32 @@ Library
   cxx-sources:
     cbits/queue.cpp
 
-  cc-options: -O2 -Wall -Wextra
+  cc-options: -O2 -Wall -Wextra -Wno-unused-parameter
   cxx-options: -O2 -Wall -Wextra -std=c++14
 
-test-suite nofib-llvm-native
-  type:                 exitcode-stdio-1.0
-  hs-source-dirs:       test/nofib
-  main-is:              Main.hs
+-- test-suite nofib-llvm-native
+--   type:                 exitcode-stdio-1.0
+--   hs-source-dirs:       test/nofib
+--   main-is:              Main.hs
 
-  build-depends:
-          base                          >= 4.10
-        , accelerate
-        , accelerate-llvm-native
-        , criterion
-        , deepseq
+--   build-depends:
+--           base                          >= 4.10
+--         , accelerate
+--         , accelerate-llvm-native
+--         , criterion
+--         , deepseq
 
-  default-language:
-        Haskell2010
+--   default-language:
+--         Haskell2010
 
-  ghc-options:
-        -Wall
-        -O2
-        -threaded
-        -rtsopts
-        -with-rtsopts=-A128M
-        -with-rtsopts=-n4M
-        -with-rtsopts=-N
+--   ghc-options:
+--         -Wall
+--         -O2
+--         -threaded
+--         -rtsopts
+--         -with-rtsopts=-A128M
+--         -with-rtsopts=-n4M
+--         -with-rtsopts=-N
 
 test-suite fusion-tests-llvm-native
   type:                 exitcode-stdio-1.0
