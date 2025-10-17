@@ -248,23 +248,6 @@ instance SetOpIndices NativeOp where
     | _ `TupRpair` TupRsingle var <- i = [(varIdx var, LoopMonotone)]
   getOpLoopDirections _ _ _ = []
 
-                -- vvvv old vvv
-                  -- 0 means maximal parallelism; each thread only gets 1 element, e.g. output of the first stage of 1-dimensional fold
-                  -- 1 is segmented along the innermost dimension into nthreads equal parts, e.g. input of the first stage of 1-dimensional fold
-                  -- 2 is one row for each thread
-                  -- 3 is segmented along the second dimension, e.g. input of a fused folddim followed by first stage of 1-dimensional fold
-                  -- 4 is 2 dimensions per thread, etc
-                  -- note that this is about _logical_ threads; if there are less physical ones present then they will perform work stealing, so this is really the (minimum) size of each bucket in the work stealing queue
-                -- ^^^^ old ^^^
--- data NativeILPVar = Dims InOut (Node Comp)
---                   | DepthPerThread InOut Node
---   deriving (Eq, Ord, Show)
--- pattern InDims, OutDims {- InDepth, OutDepth -}:: Node Comp -> Graph.Var NativeOp
--- pattern InDims   l = BackendSpecific (Dims            InArr l)
--- pattern OutDims  l = BackendSpecific (Dims           OutArr l)
--- pattern InDepth  l = BackendSpecific (DepthPerThread  InArr l)
--- pattern OutDepth l = BackendSpecific (DepthPerThread OutArr l)
-
 -- TODO: factor out more common parts of mkGraph
 -- TODO: do the TODO's in here, and also do them in the Interpreter
 -- TODO: constraints and bounds for the new variable(s)
@@ -379,7 +362,7 @@ instance MakesILP NativeOp where
     wsIn <- use $ allWriters $ getLabelArrDeps lIn
     fusionILP.constraints %= (
       <> inputConstraints c wsIn
-      <> ILP.var (InFoldSize c 0) .==. ILP.var (OutFoldSize c 0)
+      <> ILP.var (OutFoldSize c 0) .==. ILP.int (c^.nodeId)
       <> ILP.int 0 .==. copies c)
     fusionILP.bounds %= (<> foldMap (equal dir . (\x -> ReadDir x c 0)) bsIn
                          <> foldMap (equal dir . WriteDir c) (bsOut1 <> bsOut2))
@@ -391,7 +374,7 @@ instance MakesILP NativeOp where
     wsIn <- use $ allWriters bsIn
     fusionILP.constraints %= (
       <> inputConstraints c wsIn
-      <> ILP.var (InFoldSize c 0) .==. ILP.var (OutFoldSize c 0)
+      <> ILP.var (OutFoldSize c 0) .==. ILP.int (c^.nodeId)
       <> allEqual (readDirs (S.map (\b -> ((b,c),0)) bsIn) <> writeDirs (S.map (c,) bsOut))
       <> ILP.int 0 .==. copies c)
     fusionILP.bounds %= (<> defaultBounds bsIn c bsOut)
@@ -403,7 +386,7 @@ instance MakesILP NativeOp where
     wsIn <- use $ allWriters bsIn
     fusionILP.constraints %= (
       <> inputConstraints c wsIn
-      <> ILP.var (InFoldSize c 0) .==. ILP.int (c^.nodeId)
+      <> ILP.var (OutFoldSize c 0) .==. ILP.int (c^.nodeId)
       <> allEqual (readDirs (S.map (\b -> ((b,c),0)) bsIn) <> writeDirs (S.map (c,) bsOut))
       <> ILP.int 0 .==. copies c)
     fusionILP.bounds %= (<> defaultBounds bsIn c bsOut)
