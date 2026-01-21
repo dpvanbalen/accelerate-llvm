@@ -51,6 +51,7 @@ import Data.Array.Accelerate.Type (scalarType, Word8, scalarTypeWord8, scalarTyp
 import qualified Data.Array.Accelerate.Trafo.Partitioning.ILP.Graph as Graph
 import Data.Array.Accelerate.Trafo.Partitioning.ILP.Solver hiding ( var, int )
 import qualified Data.Array.Accelerate.Trafo.Partitioning.ILP.Solver as ILP
+import Data.Array.Accelerate.Trafo.Partitioning.ILP.Solve (mAXCOPIES)
 import Lens.Micro
 import Lens.Micro.Mtl
 
@@ -271,35 +272,35 @@ instance MakesILP NativeOp where
     let bsIn  = getLabelArrDeps lIn
     let bsOut = getLabelArrDeps lOut
     wsIn <- use $ allWriters bsIn
-    fusionILP.constraints %= (
-      <> inputConstraints c wsIn
-      <> ILP.var (InFoldSize c 0) .==. ILP.var (OutFoldSize c 0)
-      <> allEqual ([ILP.int i] <>  readDirs (S.map (\b -> ((b,c),0)) bsIn))
-      <> allEqual (               writeDirs (S.map (c,) bsOut)))
+    fusionILP.constraints %= (<> foldMap (\copy ->
+         inputConstraints c wsIn
+      <> ILP.var (InFoldSize c copy) .==. ILP.var (OutFoldSize c copy)
+      <> allEqual ([ILP.int i] <>  readDirs (S.map (\b -> ((b,c),copy)) bsIn))
+      <> allEqual (               writeDirs (S.map (\b -> ((c,b),copy)) bsOut))) [0..mAXCOPIES])
     fusionILP.bounds %= (
       <> defaultBounds bsIn c bsOut
-      <> lowerUpper 0 (Copies c) 5)
+      <> lowerUpper 0 (Copies c) mAXCOPIES)
     -- Different order, so no in-place paths.
 
   mkGraph c NGenerate (_fun :>: L _ lOut :>: ArgsNil) = do
     let bsOut = getLabelArrDeps lOut
-    fusionILP.constraints %= (<> allEqual (writeDirs (S.map (c,) bsOut)))
+    fusionILP.constraints %= (<> foldMap (\copy -> allEqual (writeDirs (S.map (\b -> ((c,b),copy)) bsOut))) [0..mAXCOPIES])
     fusionILP.bounds %= (
       <> defaultBounds mempty c bsOut
-      <> lowerUpper 0 (Copies c) 5)
+      <> lowerUpper 0 (Copies c) mAXCOPIES)
     -- No input, so no in-place paths.
 
   mkGraph c NMap (L (ArgFun fun) _ :>: L _ lIn :>: L _ lOut :>: ArgsNil) = do
     let bsIn  = getLabelArrDeps lIn
     let bsOut = getLabelArrDeps lOut
     wsIn <- use $ allWriters $ getLabelArrDeps lIn
-    fusionILP.constraints %= (
-      <> inputConstraints c wsIn
-      <> ILP.var (InFoldSize c 0) .==. ILP.var (OutFoldSize c 0)
-      <> allEqual (readDirs (S.map (\b -> ((b,c),0)) bsIn) <> writeDirs (S.map (c,) bsOut)))
+    fusionILP.constraints %= (<> foldMap (\copy ->
+         inputConstraints c wsIn
+      <> ILP.var (InFoldSize c copy) .==. ILP.var (OutFoldSize c copy)
+      <> allEqual (readDirs (S.map (\b -> ((b,c),copy)) bsIn) <> writeDirs (S.map (\b -> ((c,b),copy)) bsOut))) [0..mAXCOPIES])
     fusionILP.bounds %= (
       <> defaultBounds bsIn c bsOut
-      <> lowerUpper 0 (Copies c) 5)
+      <> lowerUpper 0 (Copies c) mAXCOPIES)
     fusionILP.inplacePaths %= case isIdentity fun of
       Just Refl -> (<> mkUnitInplacePaths (Number nComps * Number nComps) c lIn lOut)
       _         -> (<> mkUnitInplacePaths 1 c lIn lOut)
@@ -310,11 +311,11 @@ instance MakesILP NativeOp where
     wsTargets <- use $ allWriters bsTargets
     wsLocks   <- use $ allWriters bsLocks
     fusionILP %= (wsTargets <> wsLocks) `allBefore` c
-    fusionILP.constraints %= (
-      <> ILP.var (InFoldSize c 0) .==. ILP.var (OutFoldSize c 0)
-      <> ILP.int 0 .==. copies c)
+    fusionILP.constraints %= (<> foldMap (\copy ->
+         ILP.var (InFoldSize c copy) .==. ILP.var (OutFoldSize c copy)
+      <> ILP.int 0 .==. copies c) [0..mAXCOPIES])
     fusionILP.bounds %= (<> foldMap (equal (-2) . (\x -> ReadDir x c 0)) (bsTargets <> bsLocks)
-                         <> foldMap (equal (-3) . WriteDir c)    (bsTargets <> bsLocks))
+                         <> foldMap (equal (-3) . flip (WriteDir c) 0)    (bsTargets <> bsLocks))
     -- No output, so no in-place paths.
 
   mkGraph c NPermute' (L _ lTargets :>: L _ lIn :>: ArgsNil) = do
@@ -323,36 +324,36 @@ instance MakesILP NativeOp where
     wsTargets <- use $ allWriters bsTargets
     wsIn      <- use $ allWriters bsIn
     fusionILP %= wsTargets `allBefore` c
-    fusionILP.constraints %= (
-      <> inputConstraints c wsIn
-      <> ILP.var (InFoldSize c 0) .==. ILP.var (OutFoldSize c 0)
-      <> ILP.int 0 .==. copies c)
+    fusionILP.constraints %= (<> foldMap (\copy ->
+         inputConstraints c wsIn
+      <> ILP.var (InFoldSize c copy) .==. ILP.var (OutFoldSize c copy)
+      <> ILP.int 0 .==. copies c) [0..mAXCOPIES])
     fusionILP.bounds %= (<> foldMap (equal (-2) . (\x -> ReadDir x c 0)) (bsTargets <> bsIn)
-                         <> foldMap (equal (-3) . WriteDir c) bsTargets)
+                         <> foldMap (equal (-3) . flip (WriteDir c) 0) bsTargets)
     -- No output, so no in-place paths.
 
   mkGraph c (NScan (dirToInt -> dir)) (_fun :>: _exp :>: L _ lIn :>: L _ lOut :>: ArgsNil) = do
     let bsIn  = getLabelArrDeps lIn
     let bsOut = getLabelArrDeps lOut
     wsIn <- use $ allWriters $ getLabelArrDeps lIn
-    fusionILP.constraints %= (
-      <> inputConstraints c wsIn
-      <> ILP.var (InFoldSize c 0) .==. ILP.var (OutFoldSize c 0)
-      <> ILP.int 0 .==. copies c)
+    fusionILP.constraints %= (<> foldMap (\copy ->
+         inputConstraints c wsIn
+      <> ILP.var (InFoldSize c copy) .==. ILP.var (OutFoldSize c copy)
+      <> ILP.int 0 .==. copies c) [0..mAXCOPIES]) -- TODO why never copy scans?
     fusionILP.bounds %= (<> foldMap (equal dir  . (\x -> ReadDir x c 0)) bsIn
-                         <> foldMap (equal (-3) . WriteDir c) bsOut)
+                         <> foldMap (equal (-3) . flip (WriteDir c) 0) bsOut)
     -- Output size is one larger, so no in-place paths.
 
   mkGraph c (NScan1 (dirToInt -> dir)) (_fun :>: L _ lIn :>: L _ lOut :>: ArgsNil) = do
     let bsIn  = getLabelArrDeps lIn
     let bsOut = getLabelArrDeps lOut
     wsIn <- use $ allWriters bsIn
-    fusionILP.constraints %= (
-      <> inputConstraints c wsIn
-      <> ILP.var (InFoldSize c 0) .==. ILP.var (OutFoldSize c 0)
-      <> ILP.int 0 .==. copies c)
+    fusionILP.constraints %= (<> foldMap (\copy ->
+         inputConstraints c wsIn
+      <> ILP.var (InFoldSize c copy) .==. ILP.var (OutFoldSize c copy)
+      <> ILP.int 0 .==. copies c) [0..mAXCOPIES])
     fusionILP.bounds %= (<> foldMap (equal dir . (\x -> ReadDir x c 0)) bsIn
-                         <> foldMap (equal dir . WriteDir c) bsOut)
+                         <> foldMap (equal dir . flip (WriteDir c) 0) bsOut)
     fusionILP.inplacePaths %= (<> mkUnitInplacePaths 1 c lIn lOut)
 
   mkGraph c (NScan' (dirToInt -> dir)) (_fun :>: _exp :>: L _ lIn :>: L _ lOut1 :>: L _ lOut2 :>: ArgsNil) = do
@@ -360,23 +361,23 @@ instance MakesILP NativeOp where
     let bsOut1 = getLabelArrDeps lOut1
     let bsOut2 = getLabelArrDeps lOut2
     wsIn <- use $ allWriters $ getLabelArrDeps lIn
-    fusionILP.constraints %= (
-      <> inputConstraints c wsIn
-      <> ILP.var (OutFoldSize c 0) .==. ILP.int (c^.nodeId)
-      <> ILP.int 0 .==. copies c)
+    fusionILP.constraints %= (<> foldMap (\copy ->
+         inputConstraints c wsIn
+      <> ILP.var (OutFoldSize c copy) .==. ILP.int (c^.nodeId)
+      <> ILP.int 0 .==. copies c) [0..mAXCOPIES])
     fusionILP.bounds %= (<> foldMap (equal dir . (\x -> ReadDir x c 0)) bsIn
-                         <> foldMap (equal dir . WriteDir c) (bsOut1 <> bsOut2))
+                         <> foldMap (equal dir . flip (WriteDir c) 0) (bsOut1 <> bsOut2))
     fusionILP.inplacePaths %= (<> mkUnitInplacePaths 1 c lIn lOut1)
 
   mkGraph c NFold (_fun :>: _exp :>: L _ lIn :>: L _ lOut :>: ArgsNil) = do
     let bsIn  = getLabelArrDeps lIn
     let bsOut = getLabelArrDeps lOut
     wsIn <- use $ allWriters bsIn
-    fusionILP.constraints %= (
-      <> inputConstraints c wsIn
-      <> ILP.var (OutFoldSize c 0) .==. ILP.int (c^.nodeId)
-      <> allEqual (readDirs (S.map (\b -> ((b,c),0)) bsIn) <> writeDirs (S.map (c,) bsOut))
-      <> ILP.int 0 .==. copies c)
+    fusionILP.constraints %= (<> foldMap (\copy ->
+         inputConstraints c wsIn
+      <> ILP.var (OutFoldSize c copy) .==. ILP.int (c^.nodeId)
+      <> allEqual (readDirs (S.map (\b -> ((b,c),copy)) bsIn) <> writeDirs (S.map (\b -> ((c,b),copy)) bsOut))
+      <> ILP.int 0 .==. copies c) [0..mAXCOPIES])
     fusionILP.bounds %= (<> defaultBounds bsIn c bsOut)
     -- Not the same shape, so no in-place paths.
 
@@ -384,17 +385,17 @@ instance MakesILP NativeOp where
     let bsIn  = getLabelArrDeps lIn
     let bsOut = getLabelArrDeps lOut
     wsIn <- use $ allWriters bsIn
-    fusionILP.constraints %= (
-      <> inputConstraints c wsIn
-      <> ILP.var (OutFoldSize c 0) .==. ILP.int (c^.nodeId)
-      <> allEqual (readDirs (S.map (\b -> ((b,c),0)) bsIn) <> writeDirs (S.map (c,) bsOut))
-      <> ILP.int 0 .==. copies c)
+    fusionILP.constraints %= (<> foldMap (\copy ->
+         inputConstraints c wsIn
+      <> ILP.var (OutFoldSize c copy) .==. ILP.int (c^.nodeId)
+      <> allEqual (readDirs (S.map (\b -> ((b,c),copy)) bsIn) <> writeDirs (S.map (\b -> ((c,b),copy)) bsOut))
+      <> ILP.int 0 .==. copies c) [0..mAXCOPIES])
     fusionILP.bounds %= (<> defaultBounds bsIn c bsOut)
     -- Not the same shape, so no in-place paths.
 
   labelLabelledArg :: M.Map (Graph.Var NativeOp) Int -> Node Comp -> LabelledArg env a -> LabelledArgOp NativeOp env a
   labelLabelledArg vars c (L x@(ArgArray In  _ _ _) y) = LOp x y (vars M.! ReadDir  (getLabelArrDep y) c 0)
-  labelLabelledArg vars c (L x@(ArgArray Out _ _ _) y) = LOp x y (vars M.! WriteDir c (getLabelArrDep y))
+  labelLabelledArg vars c (L x@(ArgArray Out _ _ _) y) = LOp x y (vars M.! WriteDir c (getLabelArrDep y) 0)
   labelLabelledArg _ _ (L x y) = LOp x y 0
 
   getClusterArg :: LabelledArgOp NativeOp env a -> BackendClusterArg NativeOp a
@@ -402,7 +403,7 @@ instance MakesILP NativeOp where
 
   -- For each label: If the output is manifest, then its direction is negative (i.e. not in a backpermuted order)
   finalize :: FusionGraph -> Constraint NativeOp
-  finalize g = foldMap (\(w,b) -> timesN (manifest b) .>. ILP.var (WriteDir w b)) (g^.writeEdges)
+  finalize g = foldMap (\(w,b) -> timesN (manifest b) .>. ILP.var (WriteDir w b 0)) (g^.writeEdges)
 
   encodeBackendClusterArg BCAN = intHost $(hashQ ("BCAN" :: String))
 
@@ -415,7 +416,7 @@ inputConstraints c = foldMap $ \wIn ->
 
 defaultBounds :: Nodes GVal -> Node Comp -> Nodes GVal -> Bounds NativeOp
 defaultBounds bsIn c bsOut = foldMap (lower (-2) . (\x -> ReadDir x c 0)) bsIn
-                          <> foldMap (lower (-2) . WriteDir c) bsOut
+                          <> foldMap (lower (-2) . flip (WriteDir c) 0) bsOut
 
 instance NFData' (BackendClusterArg NativeOp) where
   rnf' :: BackendClusterArg NativeOp a -> ()
