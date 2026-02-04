@@ -51,7 +51,6 @@ import Data.Array.Accelerate.Type (scalarType, Word8, scalarTypeWord8, scalarTyp
 import qualified Data.Array.Accelerate.Trafo.Partitioning.ILP.Graph as Graph
 import Data.Array.Accelerate.Trafo.Partitioning.ILP.Solver hiding ( var, int )
 import qualified Data.Array.Accelerate.Trafo.Partitioning.ILP.Solver as ILP
-import Data.Array.Accelerate.Trafo.Partitioning.ILP.Solve (mAXCOPIES)
 import Lens.Micro
 import Lens.Micro.Mtl
 
@@ -393,10 +392,10 @@ instance MakesILP NativeOp where
     fusionILP.bounds %= (<> defaultBounds bsIn c bsOut)
     -- Not the same shape, so no in-place paths.
 
-  labelLabelledArg :: M.Map (Graph.Var NativeOp) Int -> Node Comp -> LabelledArg env a -> LabelledArgOp NativeOp env a
-  labelLabelledArg vars c (L x@(ArgArray In  _ _ _) y) = LOp x y (vars M.! ReadDir  (getLabelArrDep y) c 0)
-  labelLabelledArg vars c (L x@(ArgArray Out _ _ _) y) = LOp x y (vars M.! WriteDir c (getLabelArrDep y) 0)
-  labelLabelledArg _ _ (L x y) = LOp x y 0
+  labelLabelledArg :: M.Map (Graph.Var NativeOp) Int -> Node Comp -> CopyId -> LabelledArg env a -> LabelledArgOp NativeOp env a
+  labelLabelledArg vars c cc (L x@(ArgArray In  _ _ _) y) = LOp x y (vars M.! ReadDir  (getLabelArrDep y) c cc)
+  labelLabelledArg vars c cc (L x@(ArgArray Out _ _ _) y) = LOp x y (vars M.! WriteDir c (getLabelArrDep y) cc)
+  labelLabelledArg _ _ _ (L x y) = LOp x y 0
 
   getClusterArg :: LabelledArgOp NativeOp env a -> BackendClusterArg NativeOp a
   getClusterArg LOp{} = BCAN
@@ -408,11 +407,14 @@ instance MakesILP NativeOp where
   encodeBackendClusterArg BCAN = intHost $(hashQ ("BCAN" :: String))
 
 inputConstraints :: Node Comp -> Nodes Comp -> Constraint NativeOp
-inputConstraints c = foldMap $ \wIn ->
-    --             timesN (fused lIn l) .>=. ILP.var (InDims l) .-. ILP.var (OutDims lIn)
-    -- <> (-1) .*. timesN (fused lIn l) .<=. ILP.var (InDims l) .-. ILP.var (OutDims lIn)
-                timesN (fused (wIn, c) 0) .>=. ILP.var (InFoldSize c 0) .-. ILP.var (OutFoldSize wIn 0)
-    <> (-1) .*. timesN (fused (wIn, c) 0) .<=. ILP.var (InFoldSize c 0) .-. ILP.var (OutFoldSize wIn 0)
+inputConstraints c = foldMap $ \wIn -> 
+    -- let copyC = 0; copyWIn = 0 in 
+    foldMap (\copyC -> foldMap (\copyWIn -> 
+      --             timesN (fused lIn l) .>=. ILP.var (InDims l) .-. ILP.var (OutDims lIn)
+      -- <> (-1) .*. timesN (fused lIn l) .<=. ILP.var (InDims l) .-. ILP.var (OutDims lIn)
+                  timesN (fused (wIn, c) copyC .+. readCopy wIn copyWIn c copyC) .>=. ILP.var (InFoldSize c copyC) .-. ILP.var (OutFoldSize wIn copyWIn)
+      <> (-1) .*. timesN (fused (wIn, c) copyC .+. readCopy wIn copyWIn c copyC) .<=. ILP.var (InFoldSize c copyC) .-. ILP.var (OutFoldSize wIn copyWIn) 
+    ) [0 .. mAXCOPIES]) [0..mAXCOPIES]
 
 defaultBounds :: Nodes GVal -> Node Comp -> Nodes GVal -> Bounds NativeOp
 defaultBounds bsIn c bsOut = foldMap (lower (-2) . (\x -> ReadDir x c 0)) bsIn
