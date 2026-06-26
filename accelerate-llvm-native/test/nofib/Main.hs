@@ -15,3 +15,4 @@ import Data.Array.Accelerate.LLVM.Native
 
 main :: IO ()
 main = nofib runN
+
